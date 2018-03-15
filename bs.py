@@ -6,7 +6,9 @@ def expectedQ(depth, width, disc, model, state):
 	qs = []
 	for action in model.possible_actions:
 		qval = model.reward_func(state, action)
-		new_states = model.transition(state, action)
+		new_states = []
+		for k in range(width):
+			new_states.append(model.transition(state, action))
 		for new_state in new_states:
 			qval += 1/width*disc*expectedV(depth - 1, width, disc, model, new_state)
 		qs.append(qval)
