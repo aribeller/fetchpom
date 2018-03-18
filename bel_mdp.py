@@ -18,23 +18,25 @@ class belief_mdp:
 		self.disc = disc
 
 
-	def bel_update(self, belief, action, observation):
-		new_bel = []
-		# for each possible next state
-		for next_state in range(len(belief)):
-			state_sum = 0
-			# for each possible current state
-			for curr_state in range(len(states)):
-				# sum T(next|curr,act)*bel(curr)
-				state_sum += self.transition[curr_state][next_state][action]*belief[curr_state]
+def bel_update(self, belief, action_ind, obs_ind):
+	# new_bel = []
+	# # for each possible next state
+	# for next_state in range(len(belief)):
+	# 	state_sum = 0
+	# 	# for each possible current state
+	# 	for curr_state in range(len(states)):
+	# 		# sum T(next|curr,act)*bel(curr)
+	# 		state_sum += transition[curr_state][next_state][action]*belief[curr_state]
 
-			# belief confidence for this state is O(next|obs,act)*state_sum
-			bel_val = self.obs_prob[observation][next_state][action]*state_sum
-			new_bel.append(bel_val)
+	# 	# belief confidence for this state is O(next|obs,act)*state_sum
+	# 	bel_val = obs_prob[observation][next_state][action]*state_sum
+	# 	new_bel.append(bel_val)
 
-		# normalize the distribution and save the normalizer for the next part
-		normalizer = sum(new_bel)
-		return [bel/normalizer for bel in new_bel], normalizer
+	new_bel = self.obs_prob[obs_ind,:,action_ind]*np.dot(self.transition[:,:,action_ind], belief)
+
+	# normalize the distribution and save the normalizer for the next part
+	normalizer = np.sum(new_bel)
+	return new_bel/normalizer, normalizer
 
 	def initial_state(self):
 		return ((pyro.sample('state',
@@ -43,16 +45,16 @@ class belief_mdp:
 		 	,self.states))), [1/len(self.states) for s in self.states])
 
 	def bel_sampler(self, belief, action_ind, state_ind):
-		obs = pyro.sample('obs', dist.Categorical(Variable(torch.FloatTensor(self.obs_prob[:,state_ind,action_ind])), self.states))
+		obs = pyro.sample('obs', dist.Categorical(Variable(torch.FloatTensor(self.obs_prob[:,state_ind,action_ind])), self.observe))
 		obs_ind = self.observe.index(obs)
-		new_bel = bel_update(belief, action_ind, obs_ind)
+		new_bel, _ = bel_update(belief, action_ind, obs_ind)
 		return new_bel
 
 	# A function to check whether the belief check is close enough to the next one
-	def close_enough(check, post_bel, tol): return 1 if all([abs(a-b) < tol for a,b in zip(check,post_bel)]) else 0
+	def close_enough(self, check, post_bel, tol): return 1 if all([abs(a-b) < tol for a,b in zip(check,post_bel)]) else 0
 
 
-	def transition_prob(prior_bel, action, post_bel, normalizer, tol):
+	def transition_prob(self, prior_bel, action, post_bel, normalizer, tol):
 		total_prob = 0
 
 		for obs in range(len(observe)):
@@ -60,6 +62,9 @@ class belief_mdp:
 			total_prob += close_enough(check, post_bel, tol) * normalizer
 
 		return total_prob
+
+	def reward_func(self, belief, action_ind): return belief*self.reward[:,action_ind]
+
 
 
 
