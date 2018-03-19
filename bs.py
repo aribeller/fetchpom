@@ -23,9 +23,9 @@ def expectedV(depth, width, disc, model, belief, state):
 def solve(epsilon, gamma, rmax, model, belief, state):
 	vmax = rmax/(1 - gamma)
 	lamb = (epsilon*(1 - gamma)**2)/4
-	h = 5
+	h = 3
 	# h = int(math.ceil(math.log(lamb/vmax, gamma)))
-	c = 3
+	c = 5
 	# c = int(vmax**2/(lamb**2)*(2*h*math.log(len(model.actions)*h*vmax**2/(lamb**2)) + math.log(rmax/lamb)))
 	qs = expectedQ(h, c, gamma, model, belief, state)
 	print('qs')

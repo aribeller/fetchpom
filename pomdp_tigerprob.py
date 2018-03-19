@@ -39,7 +39,6 @@ bel = np.array([.5,.5])
 while next_act == 1:
 	next_act = solve(.1, model.disc, 10, model, bel, state)
 	print('next action:')
-	print(next_act)
 	print(actions[next_act])
 	print()
 
