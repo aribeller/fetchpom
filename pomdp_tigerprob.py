@@ -19,52 +19,29 @@ obs_prob = np.array([[[.5, .85, .5], [.5, .15, .5]], [[.5, .15, .5], [.5, .85, .
 # Discount Factor:
 disc = .9
 
-# A function to update the belief state
-def bel_update(self, belief, action_ind, obs_ind):
-	# new_bel = []
-	# # for each possible next state
-	# for next_state in range(len(belief)):
-	# 	state_sum = 0
-	# 	# for each possible current state
-	# 	for curr_state in range(len(states)):
-	# 		# sum T(next|curr,act)*bel(curr)
-	# 		state_sum += transition[curr_state][next_state][action]*belief[curr_state]
-
-	# 	# belief confidence for this state is O(next|obs,act)*state_sum
-	# 	bel_val = obs_prob[observation][next_state][action]*state_sum
-	# 	new_bel.append(bel_val)
-
-	new_bel = self.obs_prob[obs_ind,:,action_ind]*np.dot(self.transition[:,:,action_ind], belief)
-
-	# normalize the distribution and save the normalizer for the next part
-	normalizer = np.sum(new_bel)
-	return new_bel/normalizer, normalizer
-
-# A function to check whether the belief check is close enough to the next one
-def close_enough(check, post_bel, tol): return 1 if all([abs(a-b) < tol for a,b in zip(check,post_bel)]) else 0
 
 
-def transition_prob(prior_bel, action, post_bel, normalizer, tol):
-	total_prob = 0
-
-	for obs in range(len(observe)):
-		check = bel_update(prior_bel, action, obs)
-		total_prob += close_enough(check, post_bel, tol) * normalizer
-
-	return total_prob
-
-
-def reward_func(belief, action):
-	r = 0
-
-	for i in range(len(states)):
-		r += belief(i)*reward[i][action]
-
-	return r
+from bs import *
+from bel_mdp import belief_mdp
 
 
 
+model = belief_mdp(states, actions, transition, reward, observe, obs_prob, disc)
 
+first_state_ind = np.random.binomial(1,.5)
+state = states[first_state_ind]
+print('Tiger Location:')
+print(state)
+print()
+next_act = 1
+bel = np.array([.5,.5])
 
+while next_act == 1:
+	next_act = solve(.1, model.disc, 10, model, bel, state)
+	print('next action:')
+	print(next_act)
+	print(actions[next_act])
+	print()
 
+	bel, _ = model.bel_update(bel, next_act, np.random.binomial(1,.15) if state == 'SL' else np.random.binomial(1,.85))
 
