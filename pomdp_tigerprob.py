@@ -25,9 +25,10 @@ def observe(index):
 	return observations[index]
 
 # Observation probabilities (OxSxA). Probability of observing o, given state s' and action a
-def obs_prob(obs_index, states, action)
+# obs_index: int, state:vector[int], action:int -> np.array[float]
+def obs_prob(obs_index, state, action)
 	obs_prob_arr = np.array([[[.5, .85, .5], [.5, .15, .5]], [[.5, .15, .5], [.5, .85, .5]]])
-	return obs_prob_arr[obs_index, states, action]
+	return obs_prob_arr[obs_index, state, action]
 
 
 
