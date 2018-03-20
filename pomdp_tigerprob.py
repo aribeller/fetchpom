@@ -28,19 +28,39 @@ from bel_mdp import belief_mdp
 
 model = belief_mdp(states, actions, transition, reward, observe, obs_prob, disc)
 
-first_state_ind = np.random.binomial(1,.5)
-state = states[first_state_ind]
-print('Tiger Location:')
-print(state)
-print()
-next_act = 1
-bel = np.array([.5,.5])
+def run_model():
 
-while next_act == 1:
-	next_act = solve(.1, model.disc, 10, model, bel, state)
-	print('next action:')
-	print(actions[next_act])
+	first_state_ind = np.random.binomial(1,.5)
+	state = states[first_state_ind]
+	# print('Tiger Location:')
+	# print(state)
+	# print()
+	next_act = 1
+	bel = np.array([.5,.5])
+
+	while next_act == 1:
+		next_act = solve(.1, model.disc, 10, model, bel, state)
+		# print('next action:')
+		# print(actions[next_act])
+		# print()
+
+		bel, _ = model.bel_update(bel, next_act, np.random.binomial(1,.15) if state == 'SL' else np.random.binomial(1,.85))
+
+	return (state, next_act)
+
+
+correct = 0.0
+total = 0.0
+
+for i in range(1):
+	state, next_act = run_model()
+	action = actions[next_act]
+	print('iteration:', i)
+	print(state, action)
 	print()
+	correct += (state == 'SL' and action == 'R') or (state == 'SR' and action == 'L')
+	total += 1
 
-	bel, _ = model.bel_update(bel, next_act, np.random.binomial(1,.15) if state == 'SL' else np.random.binomial(1,.85))
+print(correct/total)
+
 
