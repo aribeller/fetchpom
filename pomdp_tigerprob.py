@@ -5,6 +5,7 @@ from bel_mdp import belief_mdp
 # Spec of initial tiger pomdp:
 states = ['SL', 'SR']
 actions = ['L', 'LI', 'R']
+observations = ['TL', 'TR']
 
 # Discount Factor:
 disc = .9
@@ -21,8 +22,10 @@ def reward(state, action):
 
 # Possible Observations
 def observe(index):
-	observations = ['TL', 'TR']
 	return observations[index]
+
+def observation_index(observation):
+	return observations.index(observation)
 
 # Observation probabilities (OxSxA). Probability of observing o, given state s' and action a
 # obs_index:vector[int], state:vector[int], action:int -> np.array[float]
