@@ -25,8 +25,8 @@ def observe(index):
 	return observations[index]
 
 # Observation probabilities (OxSxA). Probability of observing o, given state s' and action a
-# obs_index: int, state:vector[int], action:int -> np.array[float]
-def obs_prob(obs_index, state, action)
+# obs_index:vector[int], state:vector[int], action:int -> np.array[float]
+def obs_prob(obs_index, state, action):
 	obs_prob_arr = np.array([[[.5, .85, .5], [.5, .15, .5]], [[.5, .15, .5], [.5, .85, .5]]])
 	return obs_prob_arr[obs_index, state, action]
 
@@ -41,17 +41,17 @@ def run_model():
 
 	first_state_ind = np.random.binomial(1,.5)
 	state = states[first_state_ind]
-	# print('Tiger Location:')
-	# print(state)
-	# print()
+	print('Tiger Location:')
+	print(state)
+	print()
 	next_act = 1
 	bel = np.array([.5,.5])
 
 	while next_act == 1:
 		next_act = solve(.1, model.disc, 10, model, bel, state)
-		# print('next action:')
-		# print(actions[next_act])
-		# print()
+		print('next action:')
+		print(actions[next_act])
+		print()
 
 		bel, _ = model.bel_update(bel, next_act, np.random.binomial(1,.15) if state == 'SL' else np.random.binomial(1,.85))
 
