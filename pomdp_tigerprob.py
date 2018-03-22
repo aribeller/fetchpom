@@ -5,31 +5,39 @@ from bel_mdp import belief_mdp
 # Spec of initial tiger pomdp:
 states = ['SL', 'SR']
 actions = ['L', 'LI', 'R']
-observations = ['TL', 'TR']
 
 # Discount Factor:
 disc = .9
 
 # Transition probabilities (SxS'xA). Probability of going from State1 to State2 given action A
+# State1 and State2 are vectors
 def transition(state1, state2, action):
 	transition_arr = np.array([[[.5, 1.0, .5], [.5, 0.0, .5]], [[.5, 0.0, .5], [.5, 1.0, .5]]])
 	return transition_arr[state1, state2, action]
 
 # Reward function (SxA)
+# state is a vector
 def reward(state, action):
 	rewards = np.array([[-100.0, -1.0, 10.0], [10.0,-1.0, -100.0]])
 	return rewards[state, action]
 
 # Possible Observations
 def observe(index):
+	observations = ['TL', 'TR']
 	return observations[index]
 
-def observation_index(observation):
+def observation_index(obs):
+	observations = ['TL', 'TR']
 	return observations.index(observation)
 
+def all_obs():
+	observations = ['TL', 'TR']
+	return observations
+
 # Observation probabilities (OxSxA). Probability of observing o, given state s' and action a
-# obs_index:vector[int], state:vector[int], action:int -> np.array[float]
-def obs_prob(obs_index, state, action):
+# obs:vector[observation], state:vector[state], action:int -> np.array[float]
+def obs_prob(obs, state, action):
+	obs_index = observation_index(obs)
 	obs_prob_arr = np.array([[[.5, .85, .5], [.5, .15, .5]], [[.5, .15, .5], [.5, .85, .5]]])
 	return obs_prob_arr[obs_index, state, action]
 
