@@ -11,6 +11,9 @@ def expectedQ(depth, width, disc, model, belief, state):
 			new_beliefs = []
 			for k in range(width):
 				new_bel = model.bel_sampler(belief, action, state)
+				print('new_bel')
+				print(new_bel)
+				print()
 				new_beliefs.append(new_bel)
 			for new_belief in new_beliefs:
 				qval += 1/width*disc*np.sum(expectedV(depth - 1, width, disc, model, new_belief, state))

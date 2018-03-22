@@ -28,7 +28,7 @@ def observe(index):
 
 def observation_index(obs):
 	observations = ['TL', 'TR']
-	return observations.index(observation)
+	return observations.index(obs)
 
 def all_obs():
 	observations = ['TL', 'TR']
@@ -37,21 +37,35 @@ def all_obs():
 # Observation probabilities (OxSxA). Probability of observing o, given state s' and action a
 # obs:vector[observation], state:vector[state], action:int -> np.array[float]
 def obs_prob(obs, state, action):
-	obs_index = observation_index(obs)
+	obs_indices = []
+	for ob in obs:
+		obs_indices.append(observation_index(ob))
+
+	obs_indices = np.array(obs_indices)
+	state_indices = np.array([states.index(i) for i in state])
+	print("obs_indicies:")
+	print(obs_indices)
+	print()
+	print('state')
+	print(state)
+	print()
+	print('action')
+	print(action)
+	print
 	obs_prob_arr = np.array([[[.5, .85, .5], [.5, .15, .5]], [[.5, .15, .5], [.5, .85, .5]]])
-	return obs_prob_arr[obs_index, state, action]
+	return obs_prob_arr[obs_indices, state_indices, action]
 
 
 
 
 
 
-model = belief_mdp(states, actions, transition, reward, observe, obs_prob, disc)
+model = belief_mdp(states, actions, transition, reward, observe, all_obs, obs_prob, disc)
 
 def run_model():
 
 	first_state_ind = np.random.binomial(1,.5)
-	state = states[first_state_ind]
+	state = np.array([states[first_state_ind]])
 	print('Tiger Location:')
 	print(state)
 	print()
