@@ -2,70 +2,100 @@ import numpy as np
 from bs import *
 from bel_mdp import belief_mdp
 
-# Spec of initial tiger pomdp:
-states = ['SL', 'SR']
-actions = ['L', 'LI', 'R']
 
-# Discount Factor:
-disc = .9
+class TigerModel:
+	def __init__(self):
 
-# Transition probabilities (SxS'xA). Probability of going from State1 to State2 given action A
-# State1 and State2 are vectors
-def transition(state1, state2, action):
-	transition_arr = np.array([[[.5, 1.0, .5], [.5, 0.0, .5]], [[.5, 0.0, .5], [.5, 1.0, .5]]])
-	return transition_arr[state1, state2, action]
+		# Spec of initial tiger pomdp:
+		self.states = ['SL', 'SR']
+		self.actions = ['L', 'LI', 'R']
+		self.observations = ['TL', 'TR']
 
-# Reward function (SxA)
-# state is a vector
-def reward(state, action):
-	rewards = np.array([[-100.0, -1.0, 10.0], [10.0,-1.0, -100.0]])
-	return rewards[state, action]
+		# Discount Factor:
+		self.disc = .9
 
-# Possible Observations
-def observe(index):
-	observations = ['TL', 'TR']
-	return observations[index]
+		#transition probability matrix
+		self.transition_arr = np.array([[[.5, 1.0, .5], [.5, 0.0, .5]], [[.5, 0.0, .5], [.5, 1.0, .5]]])
 
-def observation_index(obs):
-	observations = ['TL', 'TR']
-	return observations.index(obs)
+		#s x a rewards
+		self.rewards = np.array([[-100.0, -1.0, 10.0], [10.0,-1.0, -100.0]])
 
-def all_obs():
-	observations = ['TL', 'TR']
-	return observations
+		#observation probabilities with s x a
+		self.obs_prob_arr = np.array([[[.5, .85, .5], [.5, .15, .5]], [[.5, .15, .5], [.5, .85, .5]]])
 
-# Observation probabilities (OxSxA). Probability of observing o, given state s' and action a
-# obs:vector[observation], state:vector[state], action:int -> np.array[float]
-def obs_prob(obs, state, action):
-	obs_indices = []
-	for ob in obs:
-		obs_indices.append(observation_index(ob))
+	# Transition probabilities (SxS'xA). Probability of going from State1 to State2 given action A
+	# state1: vector[state], state2:vector[state], action:int -> np.array[float]
+	def transition(self, state1, state2, action):
+		return self.transition_arr[self.state_indices(state1), self.state_indices(state2), action]
 
-	obs_indices = np.array(obs_indices)
-	state_indices = np.array([states.index(i) for i in state])
-	print("obs_indicies:")
-	print(obs_indices)
-	print()
-	print('state')
-	print(state)
-	print()
-	print('action')
-	print(action)
-	print
-	obs_prob_arr = np.array([[[.5, .85, .5], [.5, .15, .5]], [[.5, .15, .5], [.5, .85, .5]]])
-	return obs_prob_arr[obs_indices, state_indices, action]
+	# Reward function (SxA)
+	# state: vector[state], action:int -> vector[float]
+	def reward(self, state, action):
+		return self.rewards[self.state_indices(state), action]
+
+	# Possible Observations
+	# index: int -> observation
+	def observe(self, index):
+		return self.observations[index]
+
+	#obs: observation -> int
+	def observation_index(self, obs):
+		return self.observations.index(obs)
+
+	#state: state -> int
+	def state_index(self, state):
+		return self.states.index(state)
+
+	#obs: vector[observation] -> vector[int]
+	def observation_indices(self, obs):
+		obs_indices = []
+		for ob in obs:
+			obs_indices.append(self.observation_index(ob))
+		return np.array(obs_indices)
+
+	#states: vector[states] -> vector[int]
+	def state_indices(self, states):
+		s_indices = []
+		for state in states:
+			s_indices.append(self.state_index(state))
+		return np.array(s_indices)
+
+	#vector[observation]
+	def all_obs(self):
+		return self.observations
+
+	#vector[state]
+	def all_states(self):
+		return self.states
+
+	# Observation probabilities (OxSxA). Probability of observing o, given state s' and action a
+	# obs:vector[observation], state:vector[state], action:int -> np.array[float]
+	def obs_prob(self, obs, state, action):
+		obs_inds = self.observation_indices(obs)
+		state_inds = self.state_indices(state)
+		print("obs_indicies:")
+		print(obs_indices)
+		print()
+		print('state')
+		print(state)
+		print()
+		print('action')
+		print(action)
+		print
+		
+		return self.obs_prob_arr[obs_inds, state_inds, action]
 
 
 
 
+tm = TigerModel()
 
-
-model = belief_mdp(states, actions, transition, reward, observe, all_obs, obs_prob, disc)
+model = belief_mdp(tm)
 
 def run_model():
 
 	first_state_ind = np.random.binomial(1,.5)
-	state = np.array([states[first_state_ind]])
+	state = np.array([tm.states[first_state_ind]])
 	print('Tiger Location:')
 	print(state)
 	print()
@@ -73,7 +103,7 @@ def run_model():
 	bel = np.array([.5,.5])
 
 	while next_act == 1:
-		next_act = solve(.1, model.disc, 10, model, bel, state)
+		next_act = solve(.1, tm.disc, 10, model, bel, state)
 		print('next action:')
 		print(actions[next_act])
 		print()
@@ -88,7 +118,7 @@ total = 0.0
 
 for i in range(1):
 	state, next_act = run_model()
-	action = actions[next_act]
+	action = tm.actions[next_act]
 	print('iteration:', i)
 	print(state, action)
 	print()
