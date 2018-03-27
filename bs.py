@@ -1,19 +1,27 @@
 import math
 import numpy as np
+import time
 
 def expectedQ(depth, width, disc, model, belief, state):
+	# print('depth')
+	# print(depth)
+	# print()
 	if depth == 0:
-		return np.zeros(len(model.actions))
+		return np.zeros(len(model.pomdp.actions))
 	else:
 		qs = []
-		for action in range(len(model.actions)):
+		for action in range(len(model.pomdp.actions)):
+			# print('action')
+			# print(range(len(model.pomdp.actions)))
+			# print(action)
+			# print()
 			qval = model.reward_func(belief, action)
 			new_beliefs = []
 			for k in range(width):
 				new_bel = model.bel_sampler(belief, action, state)
-				print('new_bel')
-				print(new_bel)
-				print()
+				# print('new_bel')
+				# print(new_bel)
+				# print()
 				new_beliefs.append(new_bel)
 			for new_belief in new_beliefs:
 				qval += 1/width*disc*np.sum(expectedV(depth - 1, width, disc, model, new_belief, state))

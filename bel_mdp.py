@@ -14,16 +14,26 @@ class belief_mdp:
 	def __init__(self, pomdp):
 		self.pomdp = pomdp
 
+	# Given a current belief, an index corresponding to an action, and an observation
+	# return the updated belief
 	# belief: np.array, action_ind:int, obs:observation -> new_bel:np.array
 	def bel_update(self, belief, action_ind, obs):
+		# print('current belief')
+		# print(belief)
+		# print()
 
 		# calculate the unnormalized new belief according to update equation(found on wikipedia POMDP page)
-		new_bel = self.pomdp.obs_prob([obs], self.pomdp.all_states(),action_ind)*
-			np.dot(self.pomdp.transition(self.pomdp.all_states(),self.pomdp.all_states(),action_ind), belief)
+		new_bel = (self.pomdp.obs_prob([obs], self.pomdp.all_states(),action_ind)*
+			np.dot(self.pomdp.transition(self.pomdp.all_states(),self.pomdp.all_states(),action_ind), belief))
 
 		# normalize the distribution and save the normalizer for the next part
 		normalizer = np.sum(new_bel)
-		return new_bel/normalizer, normalizer
+		new_bel = new_bel/normalizer
+
+		# print('new belief')
+		# print(new_bel)
+		# print()
+		return new_bel, normalizer
 
 	# def initial_state(self):
 	# 	return ((pyro.sample('state',
@@ -43,7 +53,7 @@ class belief_mdp:
 			new_bel = np.array([.5,.5])
 			return new_bel
 		else:
-			print('listen')
+			# print('listen')
 			# obs_allind = np.arange(2)
 			obs = pyro.sample('obs', 
 				dist.Categorical(Variable(torch.FloatTensor(self.pomdp.obs_prob(self.pomdp.all_obs(),state,action_ind))), 
@@ -53,16 +63,16 @@ class belief_mdp:
 			# print(belief)
 			# print()
 			new_bel, _ = self.bel_update(belief, action_ind, obs)
-			print('new_bel in scope:')
-			print(new_bel)
-			print()
+			# print('new_bel in scope:')
+			# print(new_bel)
+			# print()
 			# print('new_bel')
 			# print(new_bel)
 			# print()
 
-		print('new_bel out scope:')
-		print(new_bel)
-		print()
+		# print('new_bel out scope:')
+		# print(new_bel)
+		# print()
 		return new_bel
 
 

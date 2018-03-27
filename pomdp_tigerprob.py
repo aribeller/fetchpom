@@ -1,6 +1,7 @@
 import numpy as np
 from bs import *
 from bel_mdp import belief_mdp
+import time
 
 
 class TigerModel:
@@ -14,19 +15,20 @@ class TigerModel:
 		# Discount Factor:
 		self.disc = .9
 
-		#transition probability matrix
+		#transition probability matrix state x state x action
 		self.transition_arr = np.array([[[.5, 1.0, .5], [.5, 0.0, .5]], [[.5, 0.0, .5], [.5, 1.0, .5]]])
 
-		#s x a rewards
+		#state x action rewards
 		self.rewards = np.array([[-100.0, -1.0, 10.0], [10.0,-1.0, -100.0]])
 
-		#observation probabilities with s x a
+		#observation probabilities with observation x state x action
 		self.obs_prob_arr = np.array([[[.5, .85, .5], [.5, .15, .5]], [[.5, .15, .5], [.5, .85, .5]]])
 
 	# Transition probabilities (SxS'xA). Probability of going from State1 to State2 given action A
 	# state1: vector[state], state2:vector[state], action:int -> np.array[float]
 	def transition(self, state1, state2, action):
-		return self.transition_arr[self.state_indices(state1), self.state_indices(state2), action]
+		rows, cols = np.ix_(self.state_indices(state1),self.state_indices(state2))
+		return self.transition_arr[rows, cols, action]
 
 	# Reward function (SxA)
 	# state: vector[state], action:int -> vector[float]
@@ -73,15 +75,15 @@ class TigerModel:
 	def obs_prob(self, obs, state, action):
 		obs_inds = self.observation_indices(obs)
 		state_inds = self.state_indices(state)
-		print("obs_indicies:")
-		print(obs_indices)
-		print()
-		print('state')
-		print(state)
-		print()
-		print('action')
-		print(action)
-		print
+		# print("obs_indicies:")
+		# print(obs)
+		# print()
+		# print('state')
+		# print(state)
+		# print()
+		# print('action')
+		# print(action)
+		# print()
 		
 		return self.obs_prob_arr[obs_inds, state_inds, action]
 
@@ -105,10 +107,14 @@ def run_model():
 	while next_act == 1:
 		next_act = solve(.1, tm.disc, 10, model, bel, state)
 		print('next action:')
-		print(actions[next_act])
+		print(tm.actions[next_act])
 		print()
 
-		bel, _ = model.bel_update(bel, next_act, np.random.binomial(1,.15) if state == 'SL' else np.random.binomial(1,.85))
+
+		obs_ind = np.random.binomial(1,.15) if state == 'SL' else np.random.binomial(1,.85)
+		obs = tm.observe(obs_ind)
+		bel, _ = model.bel_update(bel, next_act, obs)
+
 
 	return (state, next_act)
 
@@ -116,7 +122,7 @@ def run_model():
 correct = 0.0
 total = 0.0
 
-for i in range(1):
+for i in range(10):
 	state, next_act = run_model()
 	action = tm.actions[next_act]
 	print('iteration:', i)
