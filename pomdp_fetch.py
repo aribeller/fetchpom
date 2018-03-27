@@ -53,7 +53,7 @@ class fetch:
 		# All possible states as tuples. i is actual state and j is previous ask 
 		self.state = [(i,j) for i in range(len(items)) for j in range(len(items)+1)]
 		# All possible actions (pick for each item, point for each item, and wait)
-		self.actions = [('pick', i) for i in range(len(items))] + [('point', j) for j in range(len(items))] + [('wait', None)]
+		self.actions = [('pick', i) for i in range(len(items))] + [('point', j) for j in range(len(items))] + [('wait', len(items))]
 
 
 	# Transition probabilities (SxS'xA). Probability of going from State1 to State2 given action A
@@ -71,9 +71,7 @@ class fetch:
 
 				checks == True
 
-				checks = checks and curr_state[0] == next_state[0]
-				if action[0] == 'point':
-					checks = checks and next_state[1] == action[1]
+				checks = checks and curr_state[0] == next_state[0] and next_state[1] == action[1]
 
 				if checks:
 					out[i][j] = 1.0
