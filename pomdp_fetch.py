@@ -50,10 +50,22 @@ class fetch:
 		self.items = items
 		# Dictionary of item to its associated words
 		self.vocab = vocab
+		# vocab size
+		self.v_size = sum([len(v) for v in self.vocab.values()])
 		# All possible states as tuples. i is actual state and j is previous ask 
 		self.state = [(i,j) for i in range(len(items)) for j in range(len(items)+1)]
 		# All possible actions (pick for each item, point for each item, and wait)
 		self.actions = [('pick', i) for i in range(len(items))] + [('point', j) for j in range(len(items))] + [('wait', len(items))]
+		# Affirmative response words
+		self.affirm = {'yes', 'yeah', 'sure', 'yup'}
+		# Negative response words
+		self.negative = {'no', 'nope', 'other', 'not'}
+		# Response words
+		self.response = self.affirm | self.negative
+		# Smoothing parameter
+		self.smooth = 0.2
+		# prob of utterance
+		self.utter_prob = .95
 
 
 	# Transition probabilities (SxS'xA). Probability of going from State1 to State2 given action A
@@ -90,12 +102,80 @@ class fetch:
 		for s in state:
 			if act == 'pick' and item == s[0]:
 				rewards.append(10.0)
-			if act == 'pick' and item != state[0]:
+			elif act == 'pick' and item != state[0]:
 				rewards.append(-12.5)
-			if act == 'point':
-				rewards.append(-6)
-			if act == 'wait':
-				rewards.append(-1)
+			elif act == 'point':
+				rewards.append(-6.0)
+			else:
+				rewards.append(-1.0)
 
 		return np.array(rewards)
+
+	# Observation probabilities (OxSxA). Probability of observing o, given state s' and action a
+	# obs:vector[observation], state:vector[state], action:int -> np.array[float]
+
+	# Should there really be a vector of observations? I think we only ever consider one?
+	def obs_prob(self, obs, state, action):
+		out = []
+
+		words = obs.split()
+		base = {word for word in words if word not in self.response}
+		resp = {word for word in words if word in self.response}
+
+		for s in state:
+			out.append(prob_base(words, base)*prob_resp(words,resp))
+
+		return np.array(out)
+
+	# A helper to calculate the base probability of an utterance
+	# list[string], state -> float
+	def prob_base(self, base, state):
+		obj = state[0]
+
+		if len(base) == 0:
+			return 1.0 - self.utter_prob
+		else:
+			acc = self.utter_prob
+			for word in base:
+				acc = acc * (((1.0 if word in self.vocab[obj] else 0.0) + self.smooth)/
+					(len(self.vocab[obj]) + self.smooth*self.v_size))
+
+			return acc
+
+
+	# A helper to calculate the response probability of an utterance
+	# list[string], state -> float
+	def prob_resp(self, resp, state):
+		obj = state[0]
+		r_obj = state[1]
+
+		cond_prob = [[.5,.5],[.99,.01],[.01,.99]]
+
+		if r_obj == len(items):
+			cond = 0
+		elif obj == r_obj:
+			cond = 1
+		else:
+			cond = 2
+
+		if len(resp) == 0:
+			return 1.0 - self.utter_prob
+		else:
+			acc = self.utter_prob
+			for word in resp:
+				if word in self.affirm:
+					sentiment = 0
+				else:
+					sentiment = 1
+				acc = acc*cond_prob[cond][sentiment]
+			return acc
+
+
+
+			
+
+
+
+
+
 
