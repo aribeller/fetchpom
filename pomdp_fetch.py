@@ -1,45 +1,11 @@
 import numpy as np
 
-# NUM_OBJS = 6
 
-# #state x is equal to i_d = floor(x/7) and i_r = x % 7 where index 6 is null
-# states = [i for i in range((NUM_OBJS + 1)**2)]
-# #action x for x up to and including NUM_OBJS - 1 is pick object x
-# #action x for NUM_OBS to 2*NUM_OBJS - 1 is point to object x - NUM_OBJS
-# actions = [i for i in range(NUM_OBJS*2 + 1)]
+# States are represented as 2-tuples where first index is actual object desired
+# and second index is object the program asked about (None if no previous object)
 
-# #reward function SxA
-# reward = np.zeros((len(states), len(actions)))
-
-# #define the rewards
-# for i in range((NUM_OBJS + 1)**2):
-# 	i_d = math.floor(i/7)
-# 	i_r = i % 7
-# 	if i_d == 6:
-# 		continue
-# 	if i_r == 6:
-# 		i_r = 'null'
-# 	for j in range(NUM_OBJS*2 + 1):
-# 		a = None
-# 		if j <= NUM_OBJS - 1:
-# 			a = ('pick', j)
-# 		elif j <= 2*NUM_OBJS - 1:
-# 			a = ('point', j - NUM_OBJS)
-# 		else:
-# 			a = ('wait', 0)
-		
-# 		if a[0] == 'pick':
-# 			if a[1] == i_d:
-# 				#correct
-# 				reward[i, j] = 10
-# 			else:
-# 				#incorrect
-# 				reward[i, j] = -12.5
-# 		elif a[0] == 'point':
-# 			reward[i, j] = -6
-# 		elif a[0] == 'wait':
-# 			reward = -1
-
+# Actions are 2-tuples where first index is the type of action ('pick', 'point', 'wait')
+# and the second index is the object selected or None if action is 'wait' 
 
 class fetch:
 	# items: list[string]
@@ -74,17 +40,26 @@ class fetch:
 	# This is inefficient as is. Right now instantiates the entire squared
 	# state space when really only a small portion of those transitions are possible
 	def transition(self, state1, state2, action):
+		# initialize a matrix for transition from each state to each given state
 		out = np.zeros((len(state1), len(state2)))
 
+		# iterate across each from state then each to state
 		for i in range(len(state1)):
 			for j in range(len(state2)):
 				curr_state = state1[i]
 				next_state = state2[j]
 
-				checks == True
+				# No transition should effect state
+				checks = curr_state[0] == next_state[0]
 
-				checks = checks and curr_state[0] == next_state[0] and next_state[1] == action[1]
+				# If the transition involves a point action previous action should update
+				if action[0] == 'point':
+					checks = checks and next_state[1] == action[1]
+				# Otherwise previous action should stay the same
+				else:
+					checks = checks and curr_state[1] == next_state[1]
 
+				# If an entry meets all the checks update it's value
 				if checks:
 					out[i][j] = 1.0
 
@@ -99,6 +74,7 @@ class fetch:
 		act = action[0]
 		item = action[1]
 
+		# could probably do this with numpy ops instead of a loop
 		for s in state:
 			if act == 'pick' and item == s[0]:
 				rewards.append(10.0)
