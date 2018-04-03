@@ -1,5 +1,7 @@
 import numpy as np
-
+from bs import *
+from bel_mdp import belief_mdp
+import sys
 
 # States are represented as 2-tuples where first index is actual object desired
 # and second index is object the program asked about (None if no previous object)
@@ -7,19 +9,21 @@ import numpy as np
 # Actions are 2-tuples where first index is the type of action ('pick', 'point', 'wait')
 # and the second index is the object selected or None if action is 'wait' 
 
-class fetch:
+class Fetch:
 	# items: list[string]
 	# vocab: dict[string -> set[string]]
-	def __init__(self, items, vocab):
+	def __init__(self, items, vocab, item_names):
 
 		# List of items for picking
 		self.items = items
+		# List of item names
+		self.item_names = item_names
 		# Dictionary of item to its associated words
 		self.vocab = vocab
 		# vocab size
 		self.v_size = sum([len(v) for v in self.vocab.values()])
 		# All possible states as tuples. i is actual state and j is previous ask 
-		self.state = [(i,j) for i in range(len(items)) for j in range(len(items)+1)]
+		self.states = [(i,j) for i in range(len(items)) for j in range(len(items)+1)]
 		# All possible actions (pick for each item, point for each item, and wait)
 		self.actions = [('pick', i) for i in range(len(items))] + [('point', j) for j in range(len(items))] + [('wait', len(items))]
 		# Affirmative response words
@@ -33,9 +37,11 @@ class fetch:
 		# prob of utterance
 		self.utter_prob = .95
 
+		self.disc = 0.99
+
 
 	# Transition probabilities (SxS'xA). Probability of going from State1 to State2 given action A
-	# state1: vector[state], state2:vector[state], action:int -> np.array[float]
+	# state1: vector[state], state2:vector[state], action:action -> np.array[float]
 
 	# This is inefficient as is. Right now instantiates the entire squared
 	# state space when really only a small portion of those transitions are possible
@@ -67,7 +73,7 @@ class fetch:
 
 
 	# Reward function
-	# state: vector[state], action:int -> vector[float]
+	# state: vector[state], action:action -> vector[float]
 	def reward(self, state, action):
 		rewards = []
 
@@ -88,7 +94,7 @@ class fetch:
 		return np.array(rewards)
 
 	# Observation probabilities (OxSxA). Probability of observing o, given state s' and action a
-	# obs:vector[observation], state:vector[state], action:int -> np.array[float]
+	# obs:vector[observation], state:vector[state], action:action -> np.array[float]
 
 	# Should there really be a vector of observations? I think we only ever consider one?
 	def obs_prob(self, obs, state, action):
@@ -146,9 +152,76 @@ class fetch:
 				acc = acc*cond_prob[cond][sentiment]
 			return acc
 
+def run_model_auto(model, fm):
+	choice = np.random.randint(len(fm.items))
+	state = np.array([(choice, len(fm.items))])
+	print('User Choice:')
+	print(state[0])
+	print()
+	next_act = None # how does this even start?
+	#what is the belief array for this mdp?
+	bel = np.array([1/len(fm.items) for _ in range(len(fm.items))])
+	while next_act is None or next_act[0] != 'pick':
+		next_act = solve(0.1, fm.disc, model, belief, state)	
 
+def run_model(model, fm):
+	print('Items:')
+	print(fm.item_names)
+	choice = input('Choose an object (the AI will not know this)')
+	cont = True
+	while cont:
+		try:
+			choice = fm.item_names.index(choice)
+			cont = False
+		except:
+			print('Please type an object name exactly')
+	state = np.array([(choice, len(fm.items))])
+	print('User Choice:')
+	print(state[0])
+	print()
+	next_act = None # how does this even start?
+	#what is the belief array for this mdp?
+	bel = np.array([1/len(fm.items) for _ in range(len(fm.items))])
+	while next_act is None or next_act[0] != 'pick':
+		next_act = solve(0.1, fm.disc, model, belief, state)	
+		if next_act[0] == 'point':
+			print('Is the object you want ' + fm.item_names[next_act[1]] + '?')
+			obs = input('Response?')
+			bel, _ = model.bel_update(bel, next_act, obs)
+		elif next_act[0] == 'wait':
+			obs = input('Describe to me which object you want')
+			bel, _ = model.bel_update(bel, next_act, obs) 
+	if next_act[1] == state[0]:
+		print('Correct prediction')
+		return 1
+	else:
+		print('Incorrect prediction')
+		return -1
 
-			
+def main():
+	if len(sys.argv) == 1:
+		print('Please input object vocab')
+		return
+	if len(sys.argv) == 2 or len(sys.argv) == 3:
+		vocab = dict()
+		items = None
+		item_names = []
+		with open(sys.argv[1]) as f:
+			lines = f.readlines()
+			for line, i in enumerate(lines):
+				words = line.split()
+				vocab[i] = words[1:]
+				item_names.append(words[0])
+			items = [i for i in range(len(lines))]
+		fm = Fetch(items, vocab, item_names)
+		model = belief_mdp(fm)
+		if len(sys.argv) == 2:
+			run_model_auto(model, fm)
+		elif sys.argv[2] == 'manual':
+			run_model(model, fm)
+		
+if __name__ == "__main__":
+	main()
 
 
 

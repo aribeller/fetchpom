@@ -16,15 +16,15 @@ class belief_mdp:
 
 	# Given a current belief, an index corresponding to an action, and an observation
 	# return the updated belief
-	# belief: np.array, action_ind:int, obs:observation -> new_bel:np.array
-	def bel_update(self, belief, action_ind, obs):
+	# belief: np.array, action: action, obs:observation -> new_bel:np.array
+	def bel_update(self, belief, action, obs):
 		# print('current belief')
 		# print(belief)
 		# print()
 
 		# calculate the unnormalized new belief according to update equation(found on wikipedia POMDP page)
-		new_bel = (self.pomdp.obs_prob([obs], self.pomdp.all_states(),action_ind)*
-			np.dot(self.pomdp.transition(self.pomdp.all_states(),self.pomdp.all_states(),action_ind), belief))
+		new_bel = (self.pomdp.obs_prob([obs], self.pomdp.all_states(),action)*
+			np.dot(self.pomdp.transition(self.pomdp.all_states(),self.pomdp.all_states(),action), belief))
 
 		# normalize the distribution and save the normalizer for the next part
 		normalizer = np.sum(new_bel)
@@ -41,7 +41,7 @@ class belief_mdp:
 	# 	 	Variable(torch.FloatTensor([1/len(self.states) for s in self.states]))
 	# 	 	,self.states))), [1/len(self.states) for s in self.states])
 
-	#belief: np.array, action_ind: int, state: vector[state]
+	#belief: np.array, action: action, state: vector[state]
 	def bel_sampler(self, belief, action_ind, state):
 		# print('action_ind')
 		# print(action_ind)
@@ -56,13 +56,13 @@ class belief_mdp:
 			# print('listen')
 			# obs_allind = np.arange(2)
 			obs = pyro.sample('obs', 
-				dist.Categorical(Variable(torch.FloatTensor(self.pomdp.obs_prob(self.pomdp.all_obs(),state,action_ind))), 
+				dist.Categorical(Variable(torch.FloatTensor(self.pomdp.obs_prob(self.pomdp.all_obs(),state,action))), 
 				self.pomdp.all_obs()))
 			# obs_ind = self.observe(obs)
 			# print('prior_bel')
 			# print(belief)
 			# print()
-			new_bel, _ = self.bel_update(belief, action_ind, obs)
+			new_bel, _ = self.bel_update(belief, action, obs)
 			# print('new_bel in scope:')
 			# print(new_bel)
 			# print()
@@ -91,7 +91,7 @@ class belief_mdp:
 
 		return total_prob
 
-	def reward_func(self, belief, action_ind): return np.dot(belief, self.pomdp.reward(self.pomdp.all_states(),action_ind))
+	def reward_func(self, belief, action): return np.dot(belief, self.pomdp.reward(self.pomdp.all_states(),action))
 
 
 

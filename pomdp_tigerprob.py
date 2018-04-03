@@ -25,15 +25,15 @@ class TigerModel:
 		self.obs_prob_arr = np.array([[[.5, .85, .5], [.5, .15, .5]], [[.5, .15, .5], [.5, .85, .5]]])
 
 	# Transition probabilities (SxS'xA). Probability of going from State1 to State2 given action A
-	# state1: vector[state], state2:vector[state], action:int -> np.array[float]
+	# state1: vector[state], state2:vector[state], action:action -> np.array[float]
 	def transition(self, state1, state2, action):
 		rows, cols = np.ix_(self.state_indices(state1),self.state_indices(state2))
-		return self.transition_arr[rows, cols, action]
+		return self.transition_arr[rows, cols, self.action_index(action)]
 
 	# Reward function (SxA)
-	# state: vector[state], action:int -> vector[float]
+	# state: vector[state], action:action -> vector[float]
 	def reward(self, state, action):
-		return self.rewards[self.state_indices(state), action]
+		return self.rewards[self.state_indices(state), self.action_index(action)]
 
 	# Possible Observations
 	# index: int -> observation
@@ -62,6 +62,10 @@ class TigerModel:
 			s_indices.append(self.state_index(state))
 		return np.array(s_indices)
 
+	#action:action -> int
+	def action_index(self, action):
+		return self.actions.index(action)
+
 	#vector[observation]
 	def all_obs(self):
 		return self.observations
@@ -71,21 +75,11 @@ class TigerModel:
 		return self.states
 
 	# Observation probabilities (OxSxA). Probability of observing o, given state s' and action a
-	# obs:vector[observation], state:vector[state], action:int -> np.array[float]
+	# obs:vector[observation], state:vector[state], action:action -> np.array[float]
 	def obs_prob(self, obs, state, action):
 		obs_inds = self.observation_indices(obs)
 		state_inds = self.state_indices(state)
-		# print("obs_indicies:")
-		# print(obs)
-		# print()
-		# print('state')
-		# print(state)
-		# print()
-		# print('action')
-		# print(action)
-		# print()
-		
-		return self.obs_prob_arr[obs_inds, state_inds, action]
+		return self.obs_prob_arr[obs_inds, state_inds, self.action_index(action)]
 
 
 
