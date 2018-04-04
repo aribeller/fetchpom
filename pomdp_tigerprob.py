@@ -75,17 +75,13 @@ class TigerModel:
 	def obs_prob(self, obs, state, action):
 		obs_inds = self.observation_indices(obs)
 		state_inds = self.state_indices(state)
-		# print("obs_indicies:")
-		# print(obs)
-		# print()
-		# print('state')
-		# print(state)
-		# print()
-		# print('action')
-		# print(action)
-		# print()
 		
 		return self.obs_prob_arr[obs_inds, state_inds, action]
+
+	# A function to state whether the state of the game should  be reset given an action
+	# Int -> Boolean
+
+	def reset(self, action): action != 1
 
 
 
