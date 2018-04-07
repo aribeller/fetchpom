@@ -7,7 +7,7 @@ def expectedQ(depth, width, disc, model, belief, state):
 		return np.zeros(len(model.pomdp.actions))
 	else:
 		qs = []
-		for action in range(len(model.pomdp.actions)):
+		for action in model.pomdp.actions:
 			qval = model.reward_func(belief, action)
 			new_beliefs = []
 			for k in range(width):
@@ -15,11 +15,11 @@ def expectedQ(depth, width, disc, model, belief, state):
 				new_beliefs.append(new_bel)
 			for new_belief in new_beliefs:
 				qval += 1/width*disc*np.sum(expectedV(depth - 1, width, disc, model, new_belief, state))
-			qs.append(qval)
+			qs.append((action, qval))
 		return qs
 
 def expectedV(depth, width, disc, model, belief, state):
-	return np.max(np.array(expectedQ(depth, width, disc, model, belief, state)))
+	return np.max(np.array([q[1] for q in expectedQ(depth, width, disc, model, belief, state)]))
 
 def solve(epsilon, gamma, rmax, model, belief, state):
 	vmax = rmax/(1 - gamma)
@@ -32,7 +32,7 @@ def solve(epsilon, gamma, rmax, model, belief, state):
 	print('qs')
 	print(qs)
 	print()
-	return np.argmax(np.array(qs))
+	return qs[np.argmax(np.array([q[1] for q in qs]))][0]
 
 
 
