@@ -33,8 +33,8 @@ class belief_mdp:
 
 
 	#belief: np.array, action: action, state: vector[state]
-	def bel_sampler(self, belief, action_ind, state):
-		if self.pomdp.reset(action_ind):
+	def bel_sampler(self, belief, action, state):
+		if self.pomdp.reset(action):
 			state_ind = pyro.sample('state', dist.Bernoulli(Variable(torch.FloatTensor([.5]))))
 			new_bel = np.array([.5,.5])
 			return new_bel

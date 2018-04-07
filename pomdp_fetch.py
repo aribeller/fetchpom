@@ -162,7 +162,7 @@ def run_model_auto(model, fm):
 	#what is the belief array for this mdp?
 	bel = np.array([1/len(fm.items) for _ in range(len(fm.items))])
 	while next_act is None or next_act[0] != 'pick':
-		next_act = solve(0.1, fm.disc, model, belief, state)	
+		next_act = solve(0.1, fm.disc, 10, model, bel, state)	
 
 def run_model(model, fm):
 	print('Items:')
@@ -208,7 +208,7 @@ def main():
 		item_names = []
 		with open(sys.argv[1]) as f:
 			lines = f.readlines()
-			for line, i in enumerate(lines):
+			for i, line in enumerate(lines):
 				words = line.split()
 				vocab[i] = words[1:]
 				item_names.append(words[0])
