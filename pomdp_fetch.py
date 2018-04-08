@@ -146,7 +146,7 @@ class Fetch:
 		else:
 			acc = self.utter_prob
 			for word in base:
-				acc = acc * unigram(obj,word)
+				acc = acc * self.unigram(obj,word)
 
 			return acc
 
@@ -198,9 +198,16 @@ class Fetch:
 			# If the pointed objected matches the desired object, randomly sample
 			# from the affirmative array with 0.99 probability and 0.01 negative
 			# and vice versa if they do not match
-			resp = np.random.choice(np.random.choice([self.affirm, self.negative], 
-					p=[0.99 if action[1] == state[0] else 0.01, 
-					 0.01 if action[1] == state[0] else 0.99]))
+			# probs = [0.99 if action[1] == state[0] else 0.01, 0.01 if action[1] == state[0] else 0.99]
+			# print(probs)
+			L = np.random.choice(['aff', 'neg'], 
+					p=[0.99 if action[1] == state[0] else 0.01,
+					 0.01 if action[1] == state[0] else 0.99])
+
+			if L == 'aff':
+				resp = np.random.choice(list(self.affirm))
+			else:
+				resp = np.random.choice(list(self.negative))
 
 			sample = word + ' ' + resp
 
@@ -210,11 +217,10 @@ class Fetch:
 
 
 	def sample_base(self, state):
-		return np.random.choice(self.all_words, [self.unigram(state[0],word) for word in self.all_words])
+		return np.random.choice(self.all_words, p=[self.unigram(state[0],word) for word in self.all_words])
 
 	def unigram(self, obj, word):
-		print(obj)
-		return (self.vocab[obj][word] + self.smooth)/(len(self.vocab[obj]) + self.smooth*self.v_size)
+		return (self.vocab[obj][word] + self.smooth)/(sum(self.vocab[obj].values()) + self.smooth*self.v_size)
 
 
 
