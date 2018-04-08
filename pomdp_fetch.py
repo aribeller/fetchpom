@@ -255,10 +255,10 @@ def run_model(model, fm):
 			fm.prev = next_act[1]
 			print('Is the object you want ' + fm.item_names[next_act[1]] + '?')
 			obs = input('Response?')
-			bel, _ = model.bel_update(bel, next_act, obs)
+			bel = model.bel_update(bel, next_act, obs)
 		elif next_act[0] == 'wait':
 			obs = input('Describe to me which object you want')
-			bel, _ = model.bel_update(bel, next_act, obs) 
+			bel = model.bel_update(bel, next_act, obs) 
 	if next_act[1] == state[0]:
 		print('Correct prediction')
 		return 1

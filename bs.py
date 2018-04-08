@@ -10,11 +10,13 @@ def expectedQ(depth, width, disc, model, belief, state):
 		for action in model.pomdp.actions:
 			qval = model.reward_func(belief, action)
 			new_beliefs = []
+			new_states = []
 			for k in range(width):
-				new_bel = model.bel_sampler(belief, action, state)
+				new_bel, new_state = model.bel_sampler(belief, action, state)
 				new_beliefs.append(new_bel)
-			for new_belief in new_beliefs:
-				qval += 1/width*disc*np.sum(expectedV(depth - 1, width, disc, model, new_belief, state))
+				new_states.append(new_state)
+			for i in range(len(new_beliefs)):
+				qval += 1/width*disc*np.sum(expectedV(depth - 1, width, disc, model, new_beliefs[i], new_states[i]))
 			qs.append((action, qval))
 		return qs
 

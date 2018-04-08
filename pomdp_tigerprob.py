@@ -51,7 +51,7 @@ class TigerModel:
 	#obs: vector[observation] -> vector[int]
 	def observation_indices(self, obs):
 		obs_indices = []
-		for ob in obs:
+		for ob in ob:
 			obs_indices.append(self.observation_index(ob))
 		return np.array(obs_indices)
 
@@ -75,9 +75,9 @@ class TigerModel:
 		return self.states
 
 	# Observation probabilities (OxSxA). Probability of observing o, given state s' and action a
-	# obs:vector[observation], state:vector[state], action:action -> np.array[float]
+	# obs:observation, state:vector[state], action:action -> np.array[float]
 	def obs_prob(self, obs, state, action):
-		obs_inds = self.observation_indices(obs)
+		obs_inds = self.observation_index(obs)
 		state_inds = self.state_indices(state)
 
 		return self.obs_prob_arr[obs_inds, state_inds, self.action_index(action)]
@@ -115,7 +115,7 @@ def run_model():
 	bel = np.array([.5,.5])
 
 	while next_act == 'LI':
-		next_act = solve(.1, tm.disc, 10, model, bel, state)
+		next_act = solve(.1, tm.disc, 10, model, bel, np.random.choice(tm.states, p=bel))
 		print('next action:')
 		print(tm.actions[tm.action_index(next_act)])
 		print()
@@ -123,7 +123,7 @@ def run_model():
 
 		obs_ind = np.random.binomial(1,.15) if state == 'SL' else np.random.binomial(1,.85)
 		obs = tm.observe(obs_ind)
-		bel, _ = model.bel_update(bel, next_act, obs)
+		bel= model.bel_update(bel, next_act, obs)
 
 
 	return (state, next_act)

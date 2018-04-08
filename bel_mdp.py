@@ -28,7 +28,7 @@ class belief_mdp:
 		normalizer = np.sum(new_bel)
 		new_bel = new_bel/normalizer
 
-		return new_bel, normalizer
+		return new_bel
 
 
 
@@ -38,11 +38,11 @@ class belief_mdp:
 			belief = self.pomdp.init_bel()
 			index = np.random.randint(len(self.pomdp.all_states()))
 			state = self.pomdp.all_states()[index]
-		obs = self.pomdp.sample_obs(action, state)
-
-		new_bel, _ = self.bel_update(belief, action, obs)
-
-		return new_bel
+			return belief, state
+		else:
+			obs = self.pomdp.sample_obs(action, state)
+			new_bel = self.bel_update(belief, action, obs)
+			return new_bel, state
 
 
 	# def bel_sampler(self, belief, action, state):
