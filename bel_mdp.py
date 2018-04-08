@@ -21,7 +21,7 @@ class belief_mdp:
 	def bel_update(self, belief, action, obs):
 
 		# calculate the unnormalized new belief according to update equation(found on wikipedia POMDP page)
-		new_bel = (self.pomdp.obs_prob([obs], self.pomdp.all_states(),action)*
+		new_bel = (self.pomdp.obs_prob(obs, self.pomdp.all_states(),action)*
 			np.dot(self.pomdp.transition(self.pomdp.all_states(),self.pomdp.all_states(),action), belief))
 
 		# normalize the distribution and save the normalizer for the next part
@@ -36,7 +36,8 @@ class belief_mdp:
 	def bel_sampler(self, belief, action, state):
 		if self.pomdp.reset(action):
 			belief = self.pomdp.init_bel()
-			state = np.random.choice(self.pomdp.all_states())
+			index = np.random.randint(len(self.pomdp.all_states()))
+			state = self.pomdp.all_states()[index]
 		obs = self.pomdp.sample_obs(action, state)
 
 		new_bel, _ = self.bel_update(belief, action, obs)

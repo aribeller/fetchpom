@@ -22,7 +22,7 @@ class Fetch:
 		# Dictionary of item to a dictionary of words associated to that item and a count for each word
 		self.vocab = vocab
 		# All the word types in the vocab + *UNK*
-		self.all_words = list({words for v in self.vocab.values() for word in v} + {'*UNK*'})
+		self.all_words = list({word for v in self.vocab.values() for word in v} | {'*UNK*'})
 		# vocab size (plus one for *UNK*)
 		self.v_size = len(self.all_words)
 		# All possible states as tuples. i is actual state and j is previous ask 
@@ -128,11 +128,11 @@ class Fetch:
 		out = []
 
 		words = obs.split()
-		base = {word for word in words if word not in self.response}
-		resp = {word for word in words if word in self.response}
+		base = [word for word in words if word not in self.response]
+		resp = [word for word in words if word in self.response]
 
 		for s in state:
-			out.append(prob_base(words, base)*prob_resp(words,resp))
+			out.append(self.prob_base(base, state)*self.prob_resp(resp,state))
 
 		return np.array(out)
 
@@ -159,7 +159,7 @@ class Fetch:
 
 		cond_prob = [[.5,.5],[.99,.01],[.01,.99]]
 
-		if r_obj == len(items):
+		if r_obj == len(self.items):
 			cond = 0
 		elif obj == r_obj:
 			cond = 1
@@ -213,7 +213,8 @@ class Fetch:
 		return np.random.choice(self.all_words, [self.unigram(state[0],word) for word in self.all_words])
 
 	def unigram(self, obj, word):
-		return (vocab[obj][word] + self.smooth)/(len(self.vocab[obj]) + self.smooth*self.v_size)
+		print(obj)
+		return (self.vocab[obj][word] + self.smooth)/(len(self.vocab[obj]) + self.smooth*self.v_size)
 
 
 
