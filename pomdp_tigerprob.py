@@ -87,6 +87,16 @@ class TigerModel:
 
 	def reset(self, action): action != 1
 
+	def init_belief(self): return np.array([.5,.5])
+
+	def sample_obs(self, action, state):
+		if action == 'LI':
+			return np.random.choice(self.observations, 
+				p=[0.85 if state == 'SL' else 0.15, 0.15 if state == 'SL' else 0.85])
+		else:
+			return np.random.choice(self.observations)
+
+
 
 
 
@@ -101,13 +111,13 @@ def run_model():
 	print('Tiger Location:')
 	print(state)
 	print()
-	next_act = 1
+	next_act = 'LI'
 	bel = np.array([.5,.5])
 
-	while next_act == 1:
+	while next_act == 'LI':
 		next_act = solve(.1, tm.disc, 10, model, bel, state)
 		print('next action:')
-		print(tm.actions[next_act])
+		print(tm.actions[tm.action_index(next_act)])
 		print()
 
 
@@ -124,7 +134,7 @@ total = 0.0
 
 for i in range(10):
 	state, next_act = run_model()
-	action = tm.actions[next_act]
+	action = tm.actions[tm.action_index(next_act)]
 	print('iteration:', i)
 	print(state, action)
 	print()

@@ -4,7 +4,7 @@ import time
 
 def expectedQ(depth, width, disc, model, belief, state):
 	if depth == 0:
-		return np.zeros(len(model.pomdp.actions))
+		return [(action, 0.0) for action in model.pomdp.actions]
 	else:
 		qs = []
 		for action in model.pomdp.actions:
@@ -19,7 +19,8 @@ def expectedQ(depth, width, disc, model, belief, state):
 		return qs
 
 def expectedV(depth, width, disc, model, belief, state):
-	return np.max(np.array([q[1] for q in expectedQ(depth, width, disc, model, belief, state)]))
+	temp = np.array([q[1] for q in expectedQ(depth, width, disc, model, belief, state)])
+	return np.max(temp)
 
 def solve(epsilon, gamma, rmax, model, belief, state):
 	vmax = rmax/(1 - gamma)

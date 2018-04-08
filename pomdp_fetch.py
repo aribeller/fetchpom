@@ -2,6 +2,7 @@ import numpy as np
 from bs import *
 from bel_mdp import belief_mdp
 import sys
+from collections import defaultdict
 
 # States are represented as 2-tuples where first index is actual object desired
 # and second index is object the program asked about (None if no previous object)
@@ -18,10 +19,12 @@ class Fetch:
 		self.items = items
 		# List of item names
 		self.item_names = item_names
-		# Dictionary of item to its associated words
+		# Dictionary of item to a dictionary of words associated to that item and a count for each word
 		self.vocab = vocab
-		# vocab size
-		self.v_size = sum([len(v) for v in self.vocab.values()])
+		# All the word types in the vocab + *UNK*
+		self.all_words = list({words for v in self.vocab.values() for word in v} + {'*UNK*'})
+		# vocab size (plus one for *UNK*)
+		self.v_size = len(self.all_words)
 		# All possible states as tuples. i is actual state and j is previous ask 
 		self.states = [(i,j) for i in range(len(items)) for j in range(len(items)+1)]
 		# All possible actions (pick for each item, point for each item, and wait)
@@ -36,8 +39,11 @@ class Fetch:
 		self.smooth = 0.2
 		# prob of utterance
 		self.utter_prob = .95
-
+		# discout factor
 		self.disc = 0.99
+
+		# value of the previous utterance
+		self.prev = None
 
 
 	# Transition probabilities (SxS'xA). Probability of going from State1 to State2 given action A
@@ -45,8 +51,39 @@ class Fetch:
 
 	# This is inefficient as is. Right now instantiates the entire squared
 	# state space when really only a small portion of those transitions are possible
+	# def transition(self, state1, state2, action):
+	# 	# initialize a matrix for transition from each state to each given state
+	# 	out = np.zeros((len(state1), len(state2)))
+
+	# 	# iterate across each from state then each to state
+	# 	for i in range(len(state1)):
+	# 		for j in range(len(state2)):
+	# 			curr_state = state1[i]
+	# 			next_state = state2[j]
+
+	# 			# No transition should effect state
+	# 			checks = curr_state[0] == next_state[0]
+
+	# 			# If the transition involves a point action previous action should update
+	# 			if action[0] == 'point':
+	# 				checks = checks and next_state[1] == action[1]
+	# 			# Otherwise previous action should stay the same
+	# 			else:
+	# 				checks = checks and curr_state[1] == next_state[1]
+
+	# 			# If an entry meets all the checks update it's value
+	# 			if checks:
+	# 				out[i][j] = 1.0
+
+	# 	return out
+
+
+	# Second pass at the transition function. We can vastly simplify by representing
+	# the belief as a distribution over what the agent is uncertain about.
+
+	# Transition probabilities (SxS'xA). Probability of going from State1 to State2 given action A
+	# state1: vector[state], state2:vector[state], action:action -> np.array[float]
 	def transition(self, state1, state2, action):
-		# initialize a matrix for transition from each state to each given state
 		out = np.zeros((len(state1), len(state2)))
 
 		# iterate across each from state then each to state
@@ -56,17 +93,7 @@ class Fetch:
 				next_state = state2[j]
 
 				# No transition should effect state
-				checks = curr_state[0] == next_state[0]
-
-				# If the transition involves a point action previous action should update
-				if action[0] == 'point':
-					checks = checks and next_state[1] == action[1]
-				# Otherwise previous action should stay the same
-				else:
-					checks = checks and curr_state[1] == next_state[1]
-
-				# If an entry meets all the checks update it's value
-				if checks:
+				if curr_state[0] == next_state[0]:
 					out[i][j] = 1.0
 
 		return out
@@ -119,8 +146,7 @@ class Fetch:
 		else:
 			acc = self.utter_prob
 			for word in base:
-				acc = acc * (((1.0 if word in self.vocab[obj] else 0.0) + self.smooth)/
-					(len(self.vocab[obj]) + self.smooth*self.v_size))
+				acc = acc * unigram(obj,word)
 
 			return acc
 
@@ -152,6 +178,45 @@ class Fetch:
 				acc = acc*cond_prob[cond][sentiment]
 			return acc
 
+	def all_states(self): return [(i, self.prev) for i in self.items]
+
+	def reset(self, action):
+		if action[0] == 'pick':
+			self.prev = None
+			return True
+		else:
+			return False
+
+	def init_bel(self): return np.array([1/len(self.items) for _ in self.items])
+
+	def sample_obs(self, action, state):
+		sample = ''
+		if action[0] == 'wait':
+			sample = self.sample_base(state)
+		elif action[0] == 'point':
+			word = self.sample_base(state)
+			# If the pointed objected matches the desired object, randomly sample
+			# from the affirmative array with 0.99 probability and 0.01 negative
+			# and vice versa if they do not match
+			resp = np.random.choice(np.random.choice([self.affirm, self.negative], 
+					p=[0.99 if action[1] == state[0] else 0.01, 
+					 0.01 if action[1] == state[0] else 0.99]))
+
+			sample = word + ' ' + resp
+
+		return sample
+
+
+
+
+	def sample_base(self, state):
+		return np.random.choice(self.all_words, [self.unigram(state[0],word) for word in self.all_words])
+
+	def unigram(self, obj, word):
+		return (vocab[obj][word] + self.smooth)/(len(self.vocab[obj]) + self.smooth*self.v_size)
+
+
+
 def run_model_auto(model, fm):
 	choice = np.random.randint(len(fm.items))
 	state = np.array([(choice, len(fm.items))])
@@ -167,7 +232,8 @@ def run_model_auto(model, fm):
 def run_model(model, fm):
 	print('Items:')
 	print(fm.item_names)
-	choice = input('Choose an object (the AI will not know this)')
+	# I don't think this should be provided. 
+	choice = input('Choose an object (the AI will not know this):\n')
 	cont = True
 	while cont:
 		try:
@@ -175,16 +241,17 @@ def run_model(model, fm):
 			cont = False
 		except:
 			print('Please type an object name exactly')
-	state = np.array([(choice, len(fm.items))])
+	state = np.array([(choice, len(fm.items) + 1)])
 	print('User Choice:')
-	print(state[0])
+	print(state[0][0])
 	print()
 	next_act = None # how does this even start?
 	#what is the belief array for this mdp?
 	bel = np.array([1/len(fm.items) for _ in range(len(fm.items))])
 	while next_act is None or next_act[0] != 'pick':
-		next_act = solve(0.1, fm.disc, model, belief, state)	
+		next_act = solve(0.1, fm.disc, 10, model, bel, state)	
 		if next_act[0] == 'point':
+			fm.prev = next_act[1]
 			print('Is the object you want ' + fm.item_names[next_act[1]] + '?')
 			obs = input('Response?')
 			bel, _ = model.bel_update(bel, next_act, obs)
@@ -206,11 +273,19 @@ def main():
 		vocab = dict()
 		items = None
 		item_names = []
+		# Open the vocab document
 		with open(sys.argv[1]) as f:
 			lines = f.readlines()
 			for i, line in enumerate(lines):
+				# Split the line
 				words = line.split()
-				vocab[i] = words[1:]
+				word_count = defaultdict(int)
+				# get a word count dictionary for the particular item
+				for word in words[1:]:
+					word_count[word] += 1
+				# Add that item/dictionary pairing to the vocab
+				vocab[i] = word_count
+				# Append the item name to the list of item names
 				item_names.append(words[0])
 			items = [i for i in range(len(lines))]
 		fm = Fetch(items, vocab, item_names)

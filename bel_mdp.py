@@ -35,34 +35,31 @@ class belief_mdp:
 	#belief: np.array, action: action, state: vector[state]
 	def bel_sampler(self, belief, action, state):
 		if self.pomdp.reset(action):
-			state_ind = pyro.sample('state', dist.Bernoulli(Variable(torch.FloatTensor([.5]))))
-			new_bel = np.array([.5,.5])
-			return new_bel
-		else:
-			obs = pyro.sample('obs', 
-				dist.Categorical(Variable(torch.FloatTensor(self.pomdp.obs_prob(self.pomdp.all_obs(),state,action))), 
-				self.pomdp.all_obs()))
-			new_bel, _ = self.bel_update(belief, action, obs)
+			belief = self.pomdp.init_bel()
+			state = np.random.choice(self.pomdp.all_states())
+		obs = self.pomdp.sample_obs(action, state)
+
+		new_bel, _ = self.bel_update(belief, action, obs)
 
 		return new_bel
 
 
+	# def bel_sampler(self, belief, action, state):
+		# if self.pomdp.reset(action):
+		# 	state_ind = pyro.sample('state', dist.Bernoulli(Variable(torch.FloatTensor([.5]))))
+		# 	new_bel = np.array([.5,.5])
+		# 	return new_bel
+		# else:
+		# 	obs = pyro.sample('obs', 
+		# 		dist.Categorical(Variable(torch.FloatTensor(self.pomdp.obs_prob(self.pomdp.all_obs(),state,action))), 
+		# 		self.pomdp.all_obs()))
+		# 	new_bel, _ = self.bel_update(belief, action, obs)
+
+		# return new_bel
 
 
-	# A function to check whether the belief check is close enough to the next one
-	# def close_enough(self, check, post_bel, tol): return 1 if all([abs(a-b) < tol for a,b in zip(check,post_bel)]) else 0
-
-
-	def transition_prob(self, prior_bel, action, post_bel, normalizer, tol):
-		total_prob = 0
-
-		for obs in range(len(observe)):
-			check = bel_update(prior_bel, action, obs)
-			total_prob += close_enough(check, post_bel, tol) * normalizer
-
-		return total_prob
-
-	def reward_func(self, belief, action): return np.dot(belief, self.pomdp.reward(self.pomdp.all_states(),action))
+	def reward_func(self, belief, action): 
+		return np.dot(belief, self.pomdp.reward(self.pomdp.all_states(),action))
 
 
 
