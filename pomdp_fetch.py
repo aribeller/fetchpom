@@ -46,38 +46,6 @@ class Fetch:
 		self.prev = None
 
 
-	# Transition probabilities (SxS'xA). Probability of going from State1 to State2 given action A
-	# state1: vector[state], state2:vector[state], action:action -> np.array[float]
-
-	# This is inefficient as is. Right now instantiates the entire squared
-	# state space when really only a small portion of those transitions are possible
-	# def transition(self, state1, state2, action):
-	# 	# initialize a matrix for transition from each state to each given state
-	# 	out = np.zeros((len(state1), len(state2)))
-
-	# 	# iterate across each from state then each to state
-	# 	for i in range(len(state1)):
-	# 		for j in range(len(state2)):
-	# 			curr_state = state1[i]
-	# 			next_state = state2[j]
-
-	# 			# No transition should effect state
-	# 			checks = curr_state[0] == next_state[0]
-
-	# 			# If the transition involves a point action previous action should update
-	# 			if action[0] == 'point':
-	# 				checks = checks and next_state[1] == action[1]
-	# 			# Otherwise previous action should stay the same
-	# 			else:
-	# 				checks = checks and curr_state[1] == next_state[1]
-
-	# 			# If an entry meets all the checks update it's value
-	# 			if checks:
-	# 				out[i][j] = 1.0
-
-	# 	return out
-
-
 	# Second pass at the transition function. We can vastly simplify by representing
 	# the belief as a distribution over what the agent is uncertain about.
 
@@ -121,7 +89,7 @@ class Fetch:
 		return np.array(rewards)
 
 	# Observation probabilities (OxSxA). Probability of observing o, given state s' and action a
-	# obs:vector[observation], state:vector[state], action:action -> np.array[float]
+	# obs:observation, state:vector[state], action:action -> np.array[float]
 
 	# Should there really be a vector of observations? I think we only ever consider one?
 	def obs_prob(self, obs, state, action):
@@ -178,8 +146,12 @@ class Fetch:
 				acc = acc*cond_prob[cond][sentiment]
 			return acc
 
+	#Returns all possible states conditioned on the partially observable part of the state
+	# None -> vector[state]
 	def all_states(self): return [(i, self.prev) for i in self.items]
 
+	# Returns whether the model should reset the game after this action, and resets if so
+	# action: action -> boolean
 	def reset(self, action):
 		if action[0] == 'pick':
 			self.prev = None
@@ -187,8 +159,12 @@ class Fetch:
 		else:
 			return False
 
+	# Returns the initial belief about the possible states
+	# None -> vector[float]
 	def init_bel(self): return np.array([1/len(self.items) for _ in self.items])
 
+	# Returns a sampled observation based on the action that was taken from the given state
+	# action:action, state: state -> observation
 	def sample_obs(self, action, state):
 		sample = ''
 		if action[0] == 'wait':
@@ -213,12 +189,13 @@ class Fetch:
 
 		return sample
 
-
-
-
+	# Helper to get a base utterance conditioned on the state
+	# state:state -> string
 	def sample_base(self, state):
 		return np.random.choice(self.all_words, p=[self.unigram(state[0],word) for word in self.all_words])
 
+	# Helper to get the unigram probability of a word given an object
+	# obj: item, word: string -> float
 	def unigram(self, obj, word):
 		return (self.vocab[obj][word] + self.smooth)/(sum(self.vocab[obj].values()) + self.smooth*self.v_size)
 

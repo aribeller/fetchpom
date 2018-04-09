@@ -48,13 +48,6 @@ class TigerModel:
 	def state_index(self, state):
 		return self.states.index(state)
 
-	#obs: vector[observation] -> vector[int]
-	def observation_indices(self, obs):
-		obs_indices = []
-		for ob in ob:
-			obs_indices.append(self.observation_index(ob))
-		return np.array(obs_indices)
-
 	#states: vector[states] -> vector[int]
 	def state_indices(self, states):
 		s_indices = []
