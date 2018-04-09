@@ -2,7 +2,7 @@ import math
 import numpy as np
 import time
 
-def expectedQ(depth, width, disc, bmdp, belief, state):
+def expectedQ(depth, width, disc, bmdp, belief, state, a):
 	if depth == 0:
 		return [(action, 0.0) for action in bmdp.pomdp.actions]
 	else:
@@ -16,12 +16,21 @@ def expectedQ(depth, width, disc, bmdp, belief, state):
 				new_beliefs.append(new_bel)
 				new_states.append(new_state)
 			for i in range(len(new_beliefs)):
-				qval += 1/width*disc*np.sum(expectedV(depth - 1, width, disc, bmdp, new_beliefs[i], new_states[i]))
+				qval += 1/width*disc*np.sum(expectedV(depth - 1, width, disc, bmdp, new_beliefs[i], new_states[i], action))
 			qs.append((action, qval))
+		if depth == 1 and a[0] == 'point':
+			print('depth')
+			print(depth)
+			if depth == 1:
+				print('Prev Action')
+				print(a)
+			print('expectedQ')
+			print(qs)
+			print()
 		return qs
 
-def expectedV(depth, width, disc, bmdp, belief, state):
-	temp = np.array([q[1] for q in expectedQ(depth, width, disc, bmdp, belief, state)])
+def expectedV(depth, width, disc, bmdp, belief, state, a):
+	temp = np.array([q[1] for q in expectedQ(depth, width, disc, bmdp, belief, state, a)])
 	return np.max(temp)
 
 def solve(epsilon, gamma, rmax, bmdp, belief, state):
@@ -31,7 +40,7 @@ def solve(epsilon, gamma, rmax, bmdp, belief, state):
 	# h = int(math.ceil(math.log(lamb/vmax, gamma)))
 	c = 10
 	# c = int(vmax**2/(lamb**2)*(2*h*math.log(len(bmdp.actions)*h*vmax**2/(lamb**2)) + math.log(rmax/lamb)))
-	qs = expectedQ(h, c, gamma, bmdp, belief, state)
+	qs = expectedQ(h, c, gamma, bmdp, belief, state, None)
 	print('qs')
 	print(qs)
 	print()

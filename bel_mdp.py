@@ -32,7 +32,7 @@ class belief_mdp:
 
 
 
-	#belief: np.array, action: action, state: vector[state]
+	#belief: np.array, action: action, state: state
 	def bel_sampler(self, belief, action, state):
 		if self.pomdp.reset(action):
 			belief = self.pomdp.init_bel()

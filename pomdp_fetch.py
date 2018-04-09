@@ -82,7 +82,7 @@ class Fetch:
 			elif act == 'pick' and item != state[0]:
 				rewards.append(-12.5)
 			elif act == 'point':
-				rewards.append(-6.0)
+				rewards.append(-3.0)
 			else:
 				rewards.append(-1.0)
 
@@ -235,7 +235,11 @@ def run_model(model, fm):
 	#what is the belief array for this mdp?
 	bel = np.array([1/len(fm.items) for _ in range(len(fm.items))])
 	while next_act is None or next_act[0] != 'pick':
-		next_act = solve(0.1, fm.disc, 10, model, bel, (np.random.choice(fm.items, p=bel),None))
+		item = np.random.choice(fm.items, p=bel)
+		print('random item')
+		print(item)
+		print()
+		next_act = solve(0.1, fm.disc, 10, model, bel, (item,None))
 		if next_act[0] == 'point':
 			fm.prev = next_act[1]
 			print('Is the object you want ' + fm.item_names[next_act[1]] + '?\n')
