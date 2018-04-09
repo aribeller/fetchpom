@@ -170,6 +170,7 @@ class Fetch:
 		if action[0] == 'wait':
 			sample = self.sample_base(state)
 		elif action[0] == 'point':
+			state = (state[0], action[1])
 			word = self.sample_base(state)
 			# If the pointed objected matches the desired object, randomly sample
 			# from the affirmative array with 0.99 probability and 0.01 negative
@@ -187,7 +188,7 @@ class Fetch:
 
 			sample = word + ' ' + resp
 
-		return sample
+		return sample, state
 
 	# Helper to get a base utterance conditioned on the state
 	# state:state -> string
