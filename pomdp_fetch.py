@@ -132,7 +132,7 @@ class Fetch:
 		resp = [word for word in words if word in self.response]
 
 		for s in state:
-			out.append(self.prob_base(base, state)*self.prob_resp(resp,state))
+			out.append(self.prob_base(base, s)*self.prob_resp(resp,s))
 
 		return np.array(out)
 
@@ -256,7 +256,7 @@ def run_model(model, fm):
 	#what is the belief array for this mdp?
 	bel = np.array([1/len(fm.items) for _ in range(len(fm.items))])
 	while next_act is None or next_act[0] != 'pick':
-		next_act = solve(0.1, fm.disc, 10, model, bel, state)	
+		next_act = solve(0.1, fm.disc, 10, model, bel, state)
 		if next_act[0] == 'point':
 			fm.prev = next_act[1]
 			print('Is the object you want ' + fm.item_names[next_act[1]] + '?')
