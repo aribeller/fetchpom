@@ -40,7 +40,7 @@ class belief_mdp:
 			state = self.pomdp.all_states()[index]
 			return belief, state
 		else:
-			obs = self.pomdp.sample_obs(action, state)
+			obs, state = self.pomdp.sample_obs(action, state)
 			new_bel = self.bel_update(belief, action, obs)
 			return new_bel, state
 
