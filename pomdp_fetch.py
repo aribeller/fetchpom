@@ -239,33 +239,36 @@ def run_model_auto(model, fm):
 def run_model(model, fm):
 	print('Items:')
 	print(fm.item_names)
-	# I don't think this should be provided. 
-	choice = input('Choose an object (the AI will not know this):\n')
-	cont = True
-	while cont:
-		try:
-			choice = fm.item_names.index(choice)
-			cont = False
-		except:
-			print('Please type an object name exactly')
-	state = np.array([(choice, len(fm.items) + 1)])
-	print('User Choice:')
-	print(state[0][0])
 	print()
+	# I don't think this should be provided. 
+	# choice = input('Choose an object (the AI will not know this):\n')
+	# cont = True
+	# while cont:
+	# 	try:
+	# 		choice = fm.item_names.index(choice)
+	# 		cont = False
+	# 	except:
+	# 		print('Please type an object name exactly')
+	# state = np.array([(choice, len(fm.items) + 1)])
+	# print('User Choice:')
+	# print(state[0][0])
+	# print()
 	next_act = None # how does this even start?
 	#what is the belief array for this mdp?
 	bel = np.array([1/len(fm.items) for _ in range(len(fm.items))])
 	while next_act is None or next_act[0] != 'pick':
-		next_act = solve(0.1, fm.disc, 10, model, bel, state)
+		next_act = solve(0.1, fm.disc, 10, model, bel, (np.random.choice(fm.items, p=bel),None))
 		if next_act[0] == 'point':
 			fm.prev = next_act[1]
-			print('Is the object you want ' + fm.item_names[next_act[1]] + '?')
-			obs = input('Response?')
+			print('Is the object you want ' + fm.item_names[next_act[1]] + '?\n')
+			obs = input('Response?\n')
 			bel = model.bel_update(bel, next_act, obs)
 		elif next_act[0] == 'wait':
-			obs = input('Describe to me which object you want')
-			bel = model.bel_update(bel, next_act, obs) 
-	if next_act[1] == state[0]:
+			obs = input('Describe to me which object you want:\n')
+			bel = model.bel_update(bel, next_act, obs)
+	chosen = next_act[1]
+	answer = input('Is the ' + fm.item_names[chosen] + ' your item?\nPlease answer "yes" or "no"\n')
+	if answer == 'yes':
 		print('Correct prediction')
 		return 1
 	else:
