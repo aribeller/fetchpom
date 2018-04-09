@@ -85,9 +85,9 @@ class TigerModel:
 	def sample_obs(self, action, state):
 		if action == 'LI':
 			return np.random.choice(self.observations, 
-				p=[0.85 if state == 'SL' else 0.15, 0.15 if state == 'SL' else 0.85])
+				p=[0.85 if state == 'SL' else 0.15, 0.15 if state == 'SL' else 0.85]), state
 		else:
-			return np.random.choice(self.observations)
+			return np.random.choice(self.observations), state
 
 
 
