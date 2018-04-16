@@ -18,11 +18,11 @@ class belief_mdp:
 	# return the updated belief
 
 	# belief: np.array, action: action, obs:observation -> new_bel:np.array
-	def bel_update(self, belief, action, obs):
+	def bel_update(self, belief, action, obs, prev_ask):
 
 		# calculate the unnormalized new belief according to update equation(found on wikipedia POMDP page)
-		new_bel = (self.pomdp.obs_prob(obs, self.pomdp.all_states(),action)*
-			np.dot(self.pomdp.transition(self.pomdp.all_states(),self.pomdp.all_states(),action), belief))
+		new_bel = (self.pomdp.obs_prob(obs, self.pomdp.all_states(prev_ask),action)*
+			np.dot(self.pomdp.transition(self.pomdp.all_states(prev_ask),self.pomdp.all_states(prev_ask),action), belief))
 
 		# normalize the distribution and save the normalizer for the next part
 		normalizer = np.sum(new_bel)
@@ -36,12 +36,13 @@ class belief_mdp:
 	def bel_sampler(self, belief, action, state):
 		if self.pomdp.reset(action):
 			belief = self.pomdp.init_bel()
-			index = np.random.randint(len(self.pomdp.all_states()))
-			state = self.pomdp.all_states()[index]
+			all_states = self.pomdp.all_states((None,None))
+			index = np.random.randint(len(all_states))
+			state = all_states[index]
 			return belief, state
 		else:
 			obs, state = self.pomdp.sample_obs(action, state)
-			new_bel = self.bel_update(belief, action, obs)
+			new_bel = self.bel_update(belief, action, obs, state)
 			return new_bel, state
 
 
@@ -60,7 +61,7 @@ class belief_mdp:
 
 
 	def reward_func(self, belief, action): 
-		return np.dot(belief, self.pomdp.reward(self.pomdp.all_states(),action))
+		return np.dot(belief, self.pomdp.reward(self.pomdp.all_states((None,None)),action))
 
 
 

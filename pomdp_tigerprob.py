@@ -63,8 +63,8 @@ class TigerModel:
 	def all_obs(self):
 		return self.observations
 
-	#vector[state]
-	def all_states(self):
+	#state -> vector[state]
+	def all_states(self, state):
 		return self.states
 
 	# Observation probabilities (OxSxA). Probability of observing o, given state s' and action a
@@ -85,9 +85,9 @@ class TigerModel:
 	def sample_obs(self, action, state):
 		if action == 'LI':
 			return np.random.choice(self.observations, 
-				p=[0.85 if state == 'SL' else 0.15, 0.15 if state == 'SL' else 0.85])
+				p=[0.85 if state == 'SL' else 0.15, 0.15 if state == 'SL' else 0.85]), state
 		else:
-			return np.random.choice(self.observations)
+			return np.random.choice(self.observations), state
 
 
 
@@ -116,7 +116,7 @@ def run_model():
 
 		obs_ind = np.random.binomial(1,.15) if state == 'SL' else np.random.binomial(1,.85)
 		obs = tm.observe(obs_ind)
-		bel= model.bel_update(bel, next_act, obs)
+		bel = model.bel_update(bel, next_act, obs, None)
 
 
 	return (state, next_act)

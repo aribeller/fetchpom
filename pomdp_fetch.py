@@ -43,7 +43,7 @@ class Fetch:
 		self.disc = 0.99
 
 		# value of the previous utterance
-		self.prev = None
+		# self.prev = None
 
 
 	# Second pass at the transition function. We can vastly simplify by representing
@@ -82,7 +82,7 @@ class Fetch:
 			elif act == 'pick' and item != state[0]:
 				rewards.append(-12.5)
 			elif act == 'point':
-				rewards.append(-3.0)
+				rewards.append(-6.0)
 			else:
 				rewards.append(-1.0)
 
@@ -147,8 +147,8 @@ class Fetch:
 			return acc
 
 	#Returns all possible states conditioned on the partially observable part of the state
-	# None -> vector[state]
-	def all_states(self): return [(i, self.prev) for i in self.items]
+	# int -> vector[state]
+	def all_states(self, state): return [(i, state[1]) for i in self.items]
 
 	# Returns whether the model should reset the game after this action, and resets if so
 	# action: action -> boolean
@@ -166,11 +166,21 @@ class Fetch:
 	# Returns a sampled observation based on the action that was taken from the given state
 	# action:action, state: state -> observation
 	def sample_obs(self, action, state):
+		# print(state)
 		sample = ''
 		if action[0] == 'wait':
-			sample = self.sample_base(state)
+			word = self.sample_base(state)
+			L = np.random.choice(['aff', 'neg'])
+			if L == 'aff':
+				resp = np.random.choice(list(self.affirm))
+			else:
+				resp = np.random.choice(list(self.affirm))
+
+			sample = word + ' ' + resp
+
 		elif action[0] == 'point':
 			state = (state[0], action[1])
+			self.prev = action[1]
 			word = self.sample_base(state)
 			# If the pointed objected matches the desired object, randomly sample
 			# from the affirmative array with 0.99 probability and 0.01 negative
@@ -193,11 +203,13 @@ class Fetch:
 	# Helper to get a base utterance conditioned on the state
 	# state:state -> string
 	def sample_base(self, state):
+		# print(state)
 		return np.random.choice(self.all_words, p=[self.unigram(state[0],word) for word in self.all_words])
 
 	# Helper to get the unigram probability of a word given an object
 	# obj: item, word: string -> float
 	def unigram(self, obj, word):
+		# print(obj)
 		return (self.vocab[obj][word] + self.smooth)/(sum(self.vocab[obj].values()) + self.smooth*self.v_size)
 
 
@@ -218,36 +230,28 @@ def run_model(model, fm):
 	print('Items:')
 	print(fm.item_names)
 	print()
-	# I don't think this should be provided. 
-	# choice = input('Choose an object (the AI will not know this):\n')
-	# cont = True
-	# while cont:
-	# 	try:
-	# 		choice = fm.item_names.index(choice)
-	# 		cont = False
-	# 	except:
-	# 		print('Please type an object name exactly')
-	# state = np.array([(choice, len(fm.items) + 1)])
-	# print('User Choice:')
-	# print(state[0][0])
-	# print()
-	next_act = None # how does this even start?
+
+
+	first_obs = input('Please describe the item you want:\n')
+	bel = model.bel_update(np.array([1/len(fm.items) for _ in range(len(fm.items))]), ('wait',None), first_obs, (None,None))
+	next_act = ('wait', None) # how does this even start?
 	#what is the belief array for this mdp?
-	bel = np.array([1/len(fm.items) for _ in range(len(fm.items))])
+	# bel = np.array([1/len(fm.items) for _ in range(len(fm.items))])
 	while next_act is None or next_act[0] != 'pick':
 		item = np.random.choice(fm.items, p=bel)
-		print('random item')
-		print(item)
-		print()
-		next_act = solve(0.1, fm.disc, 10, model, bel, (item,None))
+		# print('random item')
+		# print(item)
+		# print()
+		next_act = solve(0.1, fm.disc, 10, model, bel, (np.random.choice(fm.items, p=bel),None))
+		print(next_act)
+		prev = next_act[1]
 		if next_act[0] == 'point':
-			fm.prev = next_act[1]
 			print('Is the object you want ' + fm.item_names[next_act[1]] + '?\n')
 			obs = input('Response?\n')
-			bel = model.bel_update(bel, next_act, obs)
+			bel = model.bel_update(bel, next_act, obs, (None,prev))
 		elif next_act[0] == 'wait':
 			obs = input('Describe to me which object you want:\n')
-			bel = model.bel_update(bel, next_act, obs)
+			bel = model.bel_update(bel, next_act, obs, (None,prev))
 	chosen = next_act[1]
 	answer = input('Is the ' + fm.item_names[chosen] + ' your item?\nPlease answer "yes" or "no"\n')
 	if answer == 'yes':
