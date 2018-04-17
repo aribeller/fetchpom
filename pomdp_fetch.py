@@ -180,7 +180,7 @@ class Fetch:
 
 		elif action[0] == 'point':
 			state = (state[0], action[1])
-			self.prev = action[1]
+			#self.prev = action[1]
 			word = self.sample_base(state)
 			# If the pointed objected matches the desired object, randomly sample
 			# from the affirmative array with 0.99 probability and 0.01 negative

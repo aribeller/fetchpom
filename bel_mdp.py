@@ -1,8 +1,8 @@
-import torch
-from torch.autograd import Variable
+#import torch
+#from torch.autograd import Variable
 
-import pyro
-import pyro.distributions as dist
+#import pyro
+#import pyro.distributions as dist
 
 import numpy as np
 import time
