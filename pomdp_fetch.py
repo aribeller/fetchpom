@@ -33,6 +33,13 @@ class Fetch:
 		self.affirm = {'yes', 'yeah', 'sure', 'yup'}
 		# Negative response words
 		self.negative = {'no', 'nope', 'other', 'not'}
+		# Left response words
+		self.left = {'left'}
+		# Right response words
+		self.right = {'right'}
+		# Position words
+		self.positional = self.left | self.right
+
 		# Response words
 		self.response = self.affirm | self.negative
 		# Smoothing parameter
@@ -96,11 +103,12 @@ class Fetch:
 		out = []
 
 		words = obs.split()
-		base = [word for word in words if word not in self.response]
-		resp = [word for word in words if word in self.response]
+		base = [word for word in words if word not in self.response and word not in self.positional]
+		resp = [word for word in words if word in self.response and word not in self.positional]
+		pos = [word for word in words if word in self.positional]
 
 		for s in state:
-			out.append(self.prob_base(base, s)*self.prob_resp(resp,s))
+			out.append(self.prob_base(base, s)*self.prob_resp(resp,s)*self.prob_pos(pos, s))
 
 		return np.array(out)
 
@@ -145,6 +153,30 @@ class Fetch:
 					sentiment = 1
 				acc = acc*cond_prob[cond][sentiment]
 			return acc
+
+	# pos: vector[string], state: state -> float
+	def prob_pos(self, pos, state):
+		obj = state[0]
+		r_obj = state[1]
+		lr = 1 if obj < len(self.items)/2 else 2
+		cond_prob = [[0.5, 0.5], [0.95, 0.05], [0.05, 0.95]]
+		cond = 0
+		if r_obj == len(self.items):
+			cond = 0
+		else:
+			cond = lr
+		if len(pos) == 0:
+			return 1.0 - self.utter_prob
+		else:
+			acc = self.utter_prob
+			for word in pos:
+				if word in self.left:
+					acc *= cond_prob[cond][0]
+				else:
+					acc *= cond_prob[cond][1]
+			return acc
+
+
 
 	#Returns all possible states conditioned on the partially observable part of the state
 	# int -> vector[state]
@@ -197,6 +229,17 @@ class Fetch:
 				resp = np.random.choice(list(self.negative))
 
 			sample = word + ' ' + resp
+
+		#Positional here
+		if np.random.rand() < 0.3:
+			pos_arg = np.random.choice(['left', 'right'],
+					p=[0.95 if state[0] < len(self.items)/2 else 0.05,
+					0.05 if state[0] < len(self.items)/2 else 0.95])
+			if pos_arg == 'left':
+				sample += ' ' + np.random.choice(list(self.left))
+			else:
+				sample += ' ' + np.random.choice(list(self.right))
+
 
 		return sample, state
 
