@@ -35,11 +35,12 @@ class belief_mdp:
 	#belief: np.array, action: action, state: state
 	def bel_sampler(self, belief, action, state):
 		if self.pomdp.reset(action):
-			belief = self.pomdp.init_bel()
-			all_states = self.pomdp.all_states((None,None))
-			index = np.random.randint(len(all_states))
-			state = all_states[index]
-			return belief, state
+			# belief = self.pomdp.init_bel()
+			# all_states = self.pomdp.all_states((None,None))
+			# index = np.random.randint(len(all_states))
+			# state = all_states[index]
+			# return belief, state
+			return [], 'complete'
 		else:
 			obs, state = self.pomdp.sample_obs(action, state)
 			new_bel = self.bel_update(belief, action, obs, state)
