@@ -247,7 +247,7 @@ def run_model(model, fm):
 		prev = next_act[1]
 		if next_act[0] == 'point':
 			print('Is the object you want ' + fm.item_names[next_act[1]] + '?\n')
-			obs = input('Response?\n')
+			obs = input('Response?\n').lower()
 			bel = model.bel_update(bel, next_act, obs, (None,prev))
 		elif next_act[0] == 'wait':
 			obs = input('Describe to me which object you want:\n')
