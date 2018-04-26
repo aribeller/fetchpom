@@ -40,6 +40,8 @@ class Fetch:
 		# Position words
 		self.positional = self.left | self.right
 
+		self.filter_cond = {'right of', 'left of'}
+
 		# Response words
 		self.response = self.affirm | self.negative
 		# Smoothing parameter
@@ -254,6 +256,44 @@ class Fetch:
 	def unigram(self, obj, word):
 		# print(obj)
 		return (self.vocab[obj][word] + self.smooth)/(sum(self.vocab[obj].values()) + self.smooth*self.v_size)
+
+	def max_obj(self, words):
+		cur_max = None
+		max_val = -1
+		for obj in self.items:
+			cur_prob = 1
+			for word in words:
+				cur_prob *= self.unigram(obj, word)
+			if cur_max is None or cur_prob > max_val:
+				cur_max = obj
+				max_val = cur_prob
+		return cur_max
+
+	# bel: vector[float], obs: observation -> vector[float]
+	def bel_bayes(self, bel, obs):
+		for keyword in self.filter_cond:
+			if keyword in obs:
+				parts = obs.split(keyword)
+				words = []
+				for part in parts:
+					words.append(parts.split())
+				#rows are left object on the phrase
+				#cols are right object on the phrase
+				p_mat = np.zeros((len(self.items), len(self.items)))
+				for i in range(len(self.items)):
+					for j in range(len(self.items)):
+						if i != j:
+							p_mat[i, j] = self.max_obj(self.items[i], words)*self.max_obj(self.items[j], words)
+				if keyword == 'right of':
+					for col in range(len(self.items)):
+						mask = np.zeros(len(self.items))
+						for index in range(col + 1, len(self.items)):
+							mask[index] = 0.8**index
+						p_mat[:, j] = p_mat[:, j] * mask
+
+
+
+
 
 
 
