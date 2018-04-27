@@ -257,17 +257,21 @@ class Fetch:
 		# print(obj)
 		return (self.vocab[obj][word] + self.smooth)/(sum(self.vocab[obj].values()) + self.smooth*self.v_size)
 
-	def max_obj(self, words):
-		cur_max = None
-		max_val = -1
-		for obj in self.items:
-			cur_prob = 1
-			for word in words:
-				cur_prob *= self.unigram(obj, word)
-			if cur_max is None or cur_prob > max_val:
-				cur_max = obj
-				max_val = cur_prob
-		return cur_max
+	def max_obj(self, obj, words):
+		# cur_max = None
+		# max_val = -1
+		# for obj in self.items:
+		# 	cur_prob = 1
+		# 	for word in words:
+		# 		cur_prob *= self.unigram(obj, word)
+		# 	if cur_max is None or cur_prob > max_val:
+		# 		cur_max = obj
+		# 		max_val = cur_prob
+		# return cur_max
+		acc = 1
+		for word in words.split():
+			acc *= unigram(obj, word)
+		return acc
 
 	# bel: vector[float], obs: observation -> vector[float]
 	def bel_bayes(self, bel, obs):
@@ -276,20 +280,29 @@ class Fetch:
 				parts = obs.split(keyword)
 				words = []
 				for part in parts:
-					words.append(parts.split())
+					words.append(part.split())
 				#rows are left object on the phrase
 				#cols are right object on the phrase
 				p_mat = np.zeros((len(self.items), len(self.items)))
 				for i in range(len(self.items)):
 					for j in range(len(self.items)):
 						if i != j:
-							p_mat[i, j] = self.max_obj(self.items[i], words)*self.max_obj(self.items[j], words)
+							p_mat[i, j] = self.max_obj(self.items[i], words[0])*self.max_obj(self.items[j], words[1])
 				if keyword == 'right of':
 					for col in range(len(self.items)):
 						mask = np.zeros(len(self.items))
 						for index in range(col + 1, len(self.items)):
 							mask[index] = 0.8**index
-						p_mat[:, j] = p_mat[:, j] * mask
+						p_mat[:, col] = p_mat[:, col] * mask
+					return p_mat[:,np.argmax(np.amax(p_mat, axis=0))]
+				elif keyword == 'left of':
+					for row in range(len(self.items)):
+						mask = np.zeros(len(self.items))
+						for index in range(row + 1, len(self.items)):
+							mask[index] = 0.8**index
+						p_mat[row, :] = p_mat[row, :] * mask
+					return p_mat[np.argmax(np.amax(p_mat, axis=1)),:]
+		return bel
 
 
 
@@ -317,9 +330,11 @@ def run_model(model, fm):
 
 	first_obs = input('Please describe the item you want:\n')
 	bel = model.bel_update(np.array([1/len(fm.items) for _ in range(len(fm.items))]), ('wait',None), first_obs, (None,None))
-	next_act = ('wait', None) # how does this even start?
-	#what is the belief array for this mdp?
-	# bel = np.array([1/len(fm.items) for _ in range(len(fm.items))])
+	bayes_filter = fm.bel_bayes(bel, first_obs)
+	bel_unnorm = bayes_filter*bel
+	bel = bel_unnorm/sum(bel_unnorm)
+	next_act = ('wait', None)
+
 	while next_act is None or next_act[0] != 'pick':
 		item = np.random.choice(fm.items, p=bel)
 		# print('random item')
@@ -332,9 +347,15 @@ def run_model(model, fm):
 			print('Is the object you want ' + fm.item_names[next_act[1]] + '?\n')
 			obs = input('Response?\n').lower()
 			bel = model.bel_update(bel, next_act, obs, (None,prev))
+			bayes_filter = fm.bel_bayes(bel, obs)
+			bel_unnorm = bayes_filter*bel
+			bel = bel_unnorm/sum(bel_unnorm)
 		elif next_act[0] == 'wait':
 			obs = input('Describe to me which object you want:\n')
 			bel = model.bel_update(bel, next_act, obs, (None,prev))
+			bayes_filter = fm.bel_bayes(bel, obs)
+			bel_unnorm = bayes_filter*bel
+			bel = bel_unnorm/sum(bel_unnorm)
 	chosen = next_act[1]
 	answer = input('Is the ' + fm.item_names[chosen] + ' your item?\nPlease answer "yes" or "no"\n')
 	if answer == 'yes':

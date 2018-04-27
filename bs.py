@@ -19,15 +19,6 @@ def expectedQ(depth, width, disc, bmdp, belief, state, a):
 				if new_state != 'complete':
 					qval += 1/width*disc*np.sum(expectedV(depth - 1, width, disc, bmdp, new_beliefs[i], new_states[i], action))
 			qs.append((action, qval))
-		# if depth == 1 and a[0] == 'point':
-			# print('depth')
-			# print(depth)
-			# if depth == 1:
-			# 	print('Prev Action')
-			# 	print(a)
-			# print('expectedQ')
-			# print(qs)
-			# print()
 		return qs
 
 def expectedV(depth, width, disc, bmdp, belief, state, a):
