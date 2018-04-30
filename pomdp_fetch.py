@@ -257,7 +257,8 @@ class Fetch:
 		# print(obj)
 		return (self.vocab[obj][word] + self.smooth)/(sum(self.vocab[obj].values()) + self.smooth*self.v_size)
 
-	def max_obj(self, obj, words):
+	#obj: int, index of the object, words: vector[string] -> float
+	def obj_prob(self, obj, words):
 		# cur_max = None
 		# max_val = -1
 		# for obj in self.items:
@@ -269,8 +270,8 @@ class Fetch:
 		# 		max_val = cur_prob
 		# return cur_max
 		acc = 1
-		for word in words.split():
-			acc *= unigram(obj, word)
+		for word in words:
+			acc *= self.unigram(obj, word)
 		return acc
 
 	# bel: vector[float], obs: observation -> vector[float]
@@ -287,21 +288,25 @@ class Fetch:
 				for i in range(len(self.items)):
 					for j in range(len(self.items)):
 						if i != j:
-							p_mat[i, j] = self.max_obj(self.items[i], words[0])*self.max_obj(self.items[j], words[1])
+							p_mat[i, j] = self.obj_prob(self.items[i], words[0])*self.obj_prob(self.items[j], words[1])
 				if keyword == 'right of':
 					for col in range(len(self.items)):
 						mask = np.zeros(len(self.items))
 						for index in range(col + 1, len(self.items)):
 							mask[index] = 0.8**index
 						p_mat[:, col] = p_mat[:, col] * mask
-					return p_mat[:,np.argmax(np.amax(p_mat, axis=0))]
+					obj_ind = np.argmax(np.amax(p_mat, axis=1)) # this index is the index of the object we want to raise the belief of
+					bel[obj_ind] += 0.5
+					return bel/np.sum(bel)
 				elif keyword == 'left of':
 					for row in range(len(self.items)):
 						mask = np.zeros(len(self.items))
 						for index in range(row + 1, len(self.items)):
 							mask[index] = 0.8**index
 						p_mat[row, :] = p_mat[row, :] * mask
-					return p_mat[np.argmax(np.amax(p_mat, axis=1)),:]
+					obj_ind = np.argmax(np.amax(p_mat, axis=1))
+					bel[obj_ind] += 0.5
+					return bel/np.sum(bel)
 		return bel
 
 
@@ -347,15 +352,15 @@ def run_model(model, fm):
 			print('Is the object you want ' + fm.item_names[next_act[1]] + '?\n')
 			obs = input('Response?\n').lower()
 			bel = model.bel_update(bel, next_act, obs, (None,prev))
-			bayes_filter = fm.bel_bayes(bel, obs)
-			bel_unnorm = bayes_filter*bel
-			bel = bel_unnorm/sum(bel_unnorm)
+			bel = fm.bel_bayes(bel, obs)
+			#bel_unnorm = bayes_filter*bel
+			#bel = bel_unnorm/sum(bel_unnorm)
 		elif next_act[0] == 'wait':
 			obs = input('Describe to me which object you want:\n')
 			bel = model.bel_update(bel, next_act, obs, (None,prev))
-			bayes_filter = fm.bel_bayes(bel, obs)
-			bel_unnorm = bayes_filter*bel
-			bel = bel_unnorm/sum(bel_unnorm)
+			bel = fm.bel_bayes(bel, obs)
+			#bel_unnorm = bayes_filter*bel
+			#bel = bel_unnorm/sum(bel_unnorm)
 	chosen = next_act[1]
 	answer = input('Is the ' + fm.item_names[chosen] + ' your item?\nPlease answer "yes" or "no"\n')
 	if answer == 'yes':
