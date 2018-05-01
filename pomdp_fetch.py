@@ -347,15 +347,16 @@ class Fetch:
 		ind = 0
 		context = []
 		while total < threshold:
+
 			context.append(srt[ind])
-			total += srt[ind][0]
+			total += srt[ind][1]
 			ind += 1
 
 		if keyword == 'left':
 			con_left = sorted(context, key=lambda x: x[0])
 			for i in range(len(con_left)):
 				x,y = con_left[i]
-				con_left[i] = (x,y+.8**i)
+				con_left[i] = (x,y+.01**i)
 			for x,y in con_left:
 				bel[x] = y
 
@@ -363,7 +364,7 @@ class Fetch:
 			con_right = sorted(context, key=lambda x: x[0], reverse=True)
 			for i in range(len(con_right)):
 				x,y = con_right[i]
-				con_right[i] = (x,y+.1**i)
+				con_right[i] = (x,y+.01**i)
 			for x,y in con_right:
 				bel[x] = y
 
