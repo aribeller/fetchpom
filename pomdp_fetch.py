@@ -41,7 +41,11 @@ class Fetch:
 		self.positional = self.left | self.right
 
 		# self.filter_cond = {'rightof', 'leftof', 'right', 'left'}
-		self.filter_cond = {'right of', 'left of'}
+		self.filter_2arg = {'rightof', 'leftof', 'near'}
+
+		self.filter_1arg = {'right', 'left'}
+
+		self.filter_cond = self.filter_2arg | self.filter_1arg
 
 		# Response words
 		self.response = self.affirm | self.negative
@@ -286,45 +290,84 @@ class Fetch:
 		return acc
 
 
+	def two_arg(self, obs, keyword):
+		# for keyword in self.filter_cond:
+		if keyword in obs:
+			parts = obs.split(keyword)
+			words = []
+			for part in parts:
+				words.append(part.split())
+			#rows are left object on the phrase
+			#cols are right object on the phrase
+			p_mat = np.zeros((len(self.items), len(self.items)))
+			for i in range(len(self.items)):
+				for j in range(len(self.items)):
+					if i != j:
+						p_mat[i, j] = self.obj_prob(self.items[i], words[0])*self.obj_prob(self.items[j], words[1])
+			if keyword == 'rightof':
+				for col in range(len(self.items)):
+					mask = np.zeros(len(self.items))
+					for index in range(col + 1, len(self.items)):
+						mask[index] = 0.8**index
+					p_mat[:, col] = p_mat[:, col] * mask
+				obj_ind = np.argmax(np.amax(p_mat, axis=1)) # this index is the index of the object we want to raise the belief of
+				bel[obj_ind] += 3
+				return bel/np.sum(bel)
+			elif keyword == 'leftof':
+				for col in range(len(self.items)):
+					mask = np.zeros(len(self.items))
+					for index in range(col):
+						mask[index] = 0.8**((col-1)-index)
+					p_mat[:, col] = p_mat[:, col] * mask
+				obj_ind = np.argmax(np.amax(p_mat, axis=1))
+				bel[obj_ind] += 3
+				return bel/np.sum(bel)		
+
+	def one_arg(self, bel, keyword, threshold):
+		e_bel = enumerate(bel)
+		srt = sorted(e_bel, key=lambda x: x[1], reverse=True)
+
+		total = 0.0
+		ind = 0
+		context = []
+		while total < threshold:
+			context.append(srt[ind])
+			total += srt[ind][0]
+			ind += 1
+
+		if keyword == 'left':
+			con_left = sorted(context, key=lambda x: x[0])
+			for i in range(len(con_left)):
+				x,y = con_left[i]
+				con_left[i] = (x,y+.8**i)
+			for x,y in con_left:
+				bel[x] = y
+
+		elif keyword == 'right':
+			con_right = sorted(context, key=lambda x: x[0], reverse=True)
+			for i in range(len(con_right)):
+				x,y = con_right[i]
+				con_right[i] = (x,y+.1**i)
+			for x,y in con_right:
+				bel[x] = y
+
+		return bel/np.sum(bel)
+
+
+
 
 
 
 	# bel: vector[float], obs: observation -> vector[float]
 	def bel_bayes(self, bel, obs):
-		# obs = obs.replace('right of', 'rightof')
-		# obs = obs.replace('left of', 'leftof')
+		obs = obs.replace('right of', 'rightof')
+		obs = obs.replace('left of', 'leftof')
 
 		for keyword in self.filter_cond:
-			if keyword in obs:
-				parts = obs.split(keyword)
-				words = []
-				for part in parts:
-					words.append(part.split())
-				#rows are left object on the phrase
-				#cols are right object on the phrase
-				p_mat = np.zeros((len(self.items), len(self.items)))
-				for i in range(len(self.items)):
-					for j in range(len(self.items)):
-						if i != j:
-							p_mat[i, j] = self.obj_prob(self.items[i], words[0])*self.obj_prob(self.items[j], words[1])
-				if keyword == 'right of':
-					for col in range(len(self.items)):
-						mask = np.zeros(len(self.items))
-						for index in range(col + 1, len(self.items)):
-							mask[index] = 0.8**index
-						p_mat[:, col] = p_mat[:, col] * mask
-					obj_ind = np.argmax(np.amax(p_mat, axis=1)) # this index is the index of the object we want to raise the belief of
-					bel[obj_ind] += 3
-					return bel/np.sum(bel)
-				elif keyword == 'left of':
-					for col in range(len(self.items)):
-						mask = np.zeros(len(self.items))
-						for index in range(col):
-							mask[index] = 0.8**((col-1)-index)
-						p_mat[:, col] = p_mat[:, col] * mask
-					obj_ind = np.argmax(np.amax(p_mat, axis=1))
-					bel[obj_ind] += 3
-					return bel/np.sum(bel)
+			if keyword in obs and keyword in self.filter_2arg:
+				bel = self.two_arg(obs, keyword)
+			elif keyword in obs and keyword in self.filter_1arg:
+				bel = self.one_arg(bel, keyword, 0.7)
 				# elif keyword == 'right':
 				# 	mask = [.9**((len(self.items) - 1) - i) for i in range(len(self.items))]
 				# 	new_bel = bel*mask
