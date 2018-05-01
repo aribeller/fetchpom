@@ -43,6 +43,8 @@ class Fetch:
 		# self.filter_cond = {'rightof', 'leftof', 'right', 'left'}
 		self.filter_2arg = {'rightof', 'leftof', 'near'}
 
+		self.base_mask = {'rightof': [0.0, 0.0, 0.8], 'leftof': [0.8, 0.0, 0.0], 'near': [0.8, 0.0, 0.8]}
+
 		self.filter_1arg = {'right', 'left'}
 
 		self.filter_cond = self.filter_2arg | self.filter_1arg
@@ -290,7 +292,7 @@ class Fetch:
 		return acc
 
 
-	def two_arg(self, obs, keyword):
+	def two_arg(self, obs, keyword, bel):
 		# for keyword in self.filter_cond:
 		if keyword in obs:
 			parts = obs.split(keyword)
@@ -304,7 +306,7 @@ class Fetch:
 				for j in range(len(self.items)):
 					if i != j:
 						p_mat[i, j] = self.obj_prob(self.items[i], words[0])*self.obj_prob(self.items[j], words[1])
-			if keyword == 'rightof':
+			"""if keyword == 'rightof':
 				for col in range(len(self.items)):
 					mask = np.zeros(len(self.items))
 					for index in range(col + 1, len(self.items)):
@@ -321,7 +323,21 @@ class Fetch:
 					p_mat[:, col] = p_mat[:, col] * mask
 				obj_ind = np.argmax(np.amax(p_mat, axis=1))
 				bel[obj_ind] += 3
-				return bel/np.sum(bel)		
+				return bel/np.sum(bel)	
+			"""
+			for col in range(len(self.items)):
+				mask = np.zeros(len(self.items))
+				for index in range(len(self.items)):
+					if index < col:
+						mask[index] = self.base_mask[keyword][0]**abs(index - col)
+					elif index == col:
+						mask[index] = self.base_mask[keyword][1]
+					elif index > col:
+						mask[index] = self.base_mask[keyword][2]**abs(index - col)
+				p_mat[:, col] = p_mat[:, col] * mask
+			obj_ind = np.argmax(np.amax(p_mat, axis=1))
+			bel[obj_ind] += 3
+			return bel/np.sum(bel)	
 
 	def one_arg(self, bel, keyword, threshold):
 		e_bel = enumerate(bel)
@@ -365,7 +381,7 @@ class Fetch:
 
 		for keyword in self.filter_cond:
 			if keyword in obs and keyword in self.filter_2arg:
-				bel = self.two_arg(obs, keyword)
+				bel = self.two_arg(obs, keyword, bel)
 			elif keyword in obs and keyword in self.filter_1arg:
 				bel = self.one_arg(bel, keyword, 0.7)
 				# elif keyword == 'right':
