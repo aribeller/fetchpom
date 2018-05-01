@@ -1,0 +1,6 @@
+black_bowl_1 plastic black bowl
+green_marker_1 green expo marker
+silver_spoon_1 metal silver spoon
+silver_spoon_2 metal silver spoon
+green_marker_2 green expo marker
+black_bowl_2 plastic black bowl
