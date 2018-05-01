@@ -40,6 +40,7 @@ class Fetch:
 		# Position words
 		self.positional = self.left | self.right
 
+		# self.filter_cond = {'rightof', 'leftof', 'right', 'left'}
 		self.filter_cond = {'right of', 'left of'}
 
 		# Response words
@@ -107,10 +108,20 @@ class Fetch:
 		words = obs.split()
 		base = [word for word in words if word not in self.response and word not in self.positional]
 		resp = [word for word in words if word in self.response and word not in self.positional]
-		pos = [word for word in words if word in self.positional]
+		# pos = [word for word in words if word in self.positional]
+		# pos = []
+
+		# for i in range(len(words)):
+		# 	word = words[i]
+		# 	if word in self.positional:
+		# 		if i == len(words) - 1:
+		# 			pos.append(word)
+		# 		else:
+		# 			if words[i + 1] != 'of':
+		# 				pos.append(word)
 
 		for s in state:
-			out.append(self.prob_base(base, s)*self.prob_resp(resp,s)*self.prob_pos(pos, s))
+			out.append(self.prob_base(base, s)*self.prob_resp(resp,s))#*self.prob_pos(pos, s))
 
 		return np.array(out)
 
@@ -157,26 +168,26 @@ class Fetch:
 			return acc
 
 	# pos: vector[string], state: state -> float
-	def prob_pos(self, pos, state):
-		obj = state[0]
-		r_obj = state[1]
-		lr = 1 if obj < len(self.items)/2 else 2
-		cond_prob = [[0.5, 0.5], [0.95, 0.05], [0.05, 0.95]]
-		cond = 0
-		if r_obj == len(self.items):
-			cond = 0
-		else:
-			cond = lr
-		if len(pos) == 0:
-			return 1.0 - self.utter_prob
-		else:
-			acc = self.utter_prob
-			for word in pos:
-				if word in self.left:
-					acc *= cond_prob[cond][0]
-				else:
-					acc *= cond_prob[cond][1]
-			return acc
+	# def prob_pos(self, pos, state):
+	# 	obj = state[0]
+	# 	r_obj = state[1]
+	# 	lr = 1 if obj < len(self.items)/2 else 2
+	# 	cond_prob = [[0.5, 0.5], [0.95, 0.05], [0.05, 0.95]]
+	# 	cond = 0
+	# 	if r_obj == len(self.items):
+	# 		cond = 0
+	# 	else:
+	# 		cond = lr
+	# 	if len(pos) == 0:
+	# 		return 1.0 - self.utter_prob
+	# 	else:
+	# 		acc = self.utter_prob
+	# 		for word in pos:
+	# 			if word in self.left:
+	# 				acc *= cond_prob[cond][0]
+	# 			else:
+	# 				acc *= cond_prob[cond][1]
+	# 		return acc
 
 
 
@@ -202,45 +213,45 @@ class Fetch:
 	def sample_obs(self, action, state):
 		# print(state)
 		sample = ''
-		if action[0] == 'wait':
-			word = self.sample_base(state)
-			L = np.random.choice(['aff', 'neg'])
-			if L == 'aff':
-				resp = np.random.choice(list(self.affirm))
-			else:
-				resp = np.random.choice(list(self.affirm))
+		if action[0] != 'wait':
+			# word = self.sample_base(state)
+			# L = np.random.choice(['aff', 'neg'])
+			# if L == 'aff':
+			# 	resp = np.random.choice(list(self.affirm))
+			# else:
+			# 	resp = np.random.choice(list(self.affirm))
 
-			sample = word + ' ' + resp
+			# sample = word + ' ' + resp
 
-		elif action[0] == 'point':
-			state = (state[0], action[1])
-			#self.prev = action[1]
-			word = self.sample_base(state)
-			# If the pointed objected matches the desired object, randomly sample
-			# from the affirmative array with 0.99 probability and 0.01 negative
-			# and vice versa if they do not match
-			# probs = [0.99 if action[1] == state[0] else 0.01, 0.01 if action[1] == state[0] else 0.99]
-			# print(probs)
-			L = np.random.choice(['aff', 'neg'], 
-					p=[0.99 if action[1] == state[0] else 0.01,
-					 0.01 if action[1] == state[0] else 0.99])
+			if action[0] == 'point':
+				state = (state[0], action[1])
+				#self.prev = action[1]
+				word = self.sample_base(state)
+				# If the pointed objected matches the desired object, randomly sample
+				# from the affirmative array with 0.99 probability and 0.01 negative
+				# and vice versa if they do not match
+				# probs = [0.99 if action[1] == state[0] else 0.01, 0.01 if action[1] == state[0] else 0.99]
+				# print(probs)
+				L = np.random.choice(['aff', 'neg'], 
+						p=[0.99 if action[1] == state[0] else 0.01,
+						 0.01 if action[1] == state[0] else 0.99])
 
-			if L == 'aff':
-				resp = np.random.choice(list(self.affirm))
-			else:
-				resp = np.random.choice(list(self.negative))
+				if L == 'aff':
+					resp = np.random.choice(list(self.affirm))
+				else:
+					resp = np.random.choice(list(self.negative))
 
-			sample = word + ' ' + resp
+				sample = word + ' ' + resp
 
-		#Positional here
-		if np.random.rand() < 0.3:
-			pos_arg = np.random.choice(['left', 'right'],
-					p=[0.95 if state[0] < len(self.items)/2 else 0.05,
-					0.05 if state[0] < len(self.items)/2 else 0.95])
-			if pos_arg == 'left':
-				sample += ' ' + np.random.choice(list(self.left))
-			else:
-				sample += ' ' + np.random.choice(list(self.right))
+			#Positional here
+			# if np.random.rand() < 0.3:
+			# 	pos_arg = np.random.choice(['left', 'right'],
+			# 			p=[0.95 if state[0] < len(self.items)/2 else 0.05,
+			# 			0.05 if state[0] < len(self.items)/2 else 0.95])
+			# 	if pos_arg == 'left':
+			# 		sample += ' ' + np.random.choice(list(self.left))
+			# 	else:
+			# 		sample += ' ' + np.random.choice(list(self.right))
 
 
 		return sample, state
@@ -274,8 +285,15 @@ class Fetch:
 			acc *= self.unigram(obj, word)
 		return acc
 
+
+
+
+
 	# bel: vector[float], obs: observation -> vector[float]
 	def bel_bayes(self, bel, obs):
+		# obs = obs.replace('right of', 'rightof')
+		# obs = obs.replace('left of', 'leftof')
+
 		for keyword in self.filter_cond:
 			if keyword in obs:
 				parts = obs.split(keyword)
@@ -296,17 +314,25 @@ class Fetch:
 							mask[index] = 0.8**index
 						p_mat[:, col] = p_mat[:, col] * mask
 					obj_ind = np.argmax(np.amax(p_mat, axis=1)) # this index is the index of the object we want to raise the belief of
-					bel[obj_ind] += 0.5
+					bel[obj_ind] += 3
 					return bel/np.sum(bel)
 				elif keyword == 'left of':
-					for row in range(len(self.items)):
+					for col in range(len(self.items)):
 						mask = np.zeros(len(self.items))
-						for index in range(row + 1, len(self.items)):
-							mask[index] = 0.8**index
-						p_mat[row, :] = p_mat[row, :] * mask
+						for index in range(col):
+							mask[index] = 0.8**((col-1)-index)
+						p_mat[:, col] = p_mat[:, col] * mask
 					obj_ind = np.argmax(np.amax(p_mat, axis=1))
-					bel[obj_ind] += 0.5
+					bel[obj_ind] += 3
 					return bel/np.sum(bel)
+				# elif keyword == 'right':
+				# 	mask = [.9**((len(self.items) - 1) - i) for i in range(len(self.items))]
+				# 	new_bel = bel*mask
+				# 	return new_bel/np.sum(new_bel)
+				# elif keyword == 'left':
+				# 	mask = [.9**(i) for i in range(len(self.items))]
+				# 	new_bel = bel*mask
+				# 	return new_bel/np.sum(new_bel)
 		return bel
 
 
@@ -335,9 +361,12 @@ def run_model(model, fm):
 
 	first_obs = input('Please describe the item you want:\n')
 	bel = model.bel_update(np.array([1/len(fm.items) for _ in range(len(fm.items))]), ('wait',None), first_obs, (None,None))
-	bayes_filter = fm.bel_bayes(bel, first_obs)
-	bel_unnorm = bayes_filter*bel
-	bel = bel_unnorm/sum(bel_unnorm)
+	bel = fm.bel_bayes(bel, first_obs)
+	# bel_unnorm = bayes_filter*bel
+	# bel = bel_unnorm/sum(bel_unnorm)
+	print('first belief update')
+	print(bel)
+	print()
 	next_act = ('wait', None)
 
 	while next_act is None or next_act[0] != 'pick':
@@ -353,6 +382,9 @@ def run_model(model, fm):
 			obs = input('Response?\n').lower()
 			bel = model.bel_update(bel, next_act, obs, (None,prev))
 			bel = fm.bel_bayes(bel, obs)
+			print('successive belief updates')
+			print(bel)
+			print()
 			#bel_unnorm = bayes_filter*bel
 			#bel = bel_unnorm/sum(bel_unnorm)
 		elif next_act[0] == 'wait':
