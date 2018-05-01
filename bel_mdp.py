@@ -17,7 +17,7 @@ class belief_mdp:
 	# Given a current belief, an index corresponding to an action, and an observation
 	# return the updated belief
 
-	# belief: np.array, action: action, obs:observation -> new_bel:np.array
+	# belief: np.array, action: action, obs:observation -> new_bel:np.array[float]
 	def bel_update(self, belief, action, obs, prev_ask):
 
 		# calculate the unnormalized new belief according to update equation(found on wikipedia POMDP page)
@@ -30,43 +30,17 @@ class belief_mdp:
 
 		return new_bel
 
-
-
-	#belief: np.array, action: action, state: state
+	# Samples the model for an observation to update the belief state and returns the new belief and state
+	#belief: np.array, action: action, state: state -> vector[float], state
 	def bel_sampler(self, belief, action, state):
 		if self.pomdp.reset(action):
-			# belief = self.pomdp.init_bel()
-			# all_states = self.pomdp.all_states((None,None))
-			# index = np.random.randint(len(all_states))
-			# state = all_states[index]
-			# return belief, state
 			return [], 'complete'
 		else:
 			obs, state = self.pomdp.sample_obs(action, state)
 			new_bel = self.bel_update(belief, action, obs, state)
 			return new_bel, state
 
-
-	# def bel_sampler(self, belief, action, state):
-		# if self.pomdp.reset(action):
-		# 	state_ind = pyro.sample('state', dist.Bernoulli(Variable(torch.FloatTensor([.5]))))
-		# 	new_bel = np.array([.5,.5])
-		# 	return new_bel
-		# else:
-		# 	obs = pyro.sample('obs', 
-		# 		dist.Categorical(Variable(torch.FloatTensor(self.pomdp.obs_prob(self.pomdp.all_obs(),state,action))), 
-		# 		self.pomdp.all_obs()))
-		# 	new_bel, _ = self.bel_update(belief, action, obs)
-
-		# return new_bel
-
-
+	# Returns the reward expected from an action given a belief
+	# belief: vector[float], action: action -> float
 	def reward_func(self, belief, action): 
 		return np.dot(belief, self.pomdp.reward(self.pomdp.all_states((None,None)),action))
-
-
-
-
-
-
-

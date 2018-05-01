@@ -2,6 +2,8 @@ import math
 import numpy as np
 import time
 
+# Returns a list of the expected q vals associated with each action
+# depth: int, width: int, disc: float, bmdp: the belief_mdp model, belief: vector[float], state: state, a: action -> vector[(action, float)]
 def expectedQ(depth, width, disc, bmdp, belief, state, a):
 	if depth == 0:
 		return [(action, 0.0) for action in bmdp.pomdp.actions]
@@ -21,10 +23,14 @@ def expectedQ(depth, width, disc, bmdp, belief, state, a):
 			qs.append((action, qval))
 		return qs
 
+# Helper that returns the maximum expected q value given a set of parameters
+# depth: int, width: int, disc: float, bmdp: belief mdp model, belief: vector[float], state: state, a: action -> float
 def expectedV(depth, width, disc, bmdp, belief, state, a):
 	temp = np.array([q[1] for q in expectedQ(depth, width, disc, bmdp, belief, state, a)])
 	return np.max(temp)
 
+# Given a belief and a state and a model, returns the best action to take
+# epsilon: float, gamma: float, rmax: float, bmdp: belief mdp model, belief: vector[float], state: state -> action
 def solve(epsilon, gamma, rmax, bmdp, belief, state):
 	vmax = rmax/(1 - gamma)
 	lamb = (epsilon*(1 - gamma)**2)/4
